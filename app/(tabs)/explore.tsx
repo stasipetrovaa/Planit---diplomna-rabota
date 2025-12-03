@@ -1,14 +1,25 @@
 import AgendaItem from "@/components/ui/AgendaItem";
 import { Colors } from "@/constants/Colors";
 import { useCalendar } from "@/contexts/calendar-context";
-import { useEffect, useMemo, useState } from "react";
+import { EventType } from "@/types/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEventModal } from "./_layout";
 
 export default function ExploreScreen() {
-  const { events, getEvents } = useCalendar();
+  const { events, getEvents, toggleEventComplete } = useCalendar();
+  const { openEventModal } = useEventModal();
   const [query, setQuery] = useState("");
   const [visibleMonth, setVisibleMonth] = useState(new Date());
+
+  const handleEventPress = useCallback((event: EventType) => {
+    openEventModal(event);
+  }, [openEventModal]);
+
+  const handleToggleComplete = useCallback((event: EventType) => {
+    toggleEventComplete(event);
+  }, [toggleEventComplete]);
 
   useEffect(() => {
     const ym = visibleMonth;
@@ -91,7 +102,14 @@ export default function ExploreScreen() {
                     `${
                       ev.title
                     }-${ev.startDate.toISOString()}-${ev.startTime.toISOString()}-${index}`;
-                  return <AgendaItem key={key} item={ev} />;
+                  return (
+                    <AgendaItem
+                      key={key}
+                      item={ev}
+                      onPress={handleEventPress}
+                      onToggleComplete={handleToggleComplete}
+                    />
+                  );
                 })}
             </View>
           )}

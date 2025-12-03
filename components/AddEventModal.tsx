@@ -5,7 +5,7 @@ import { getWeekday } from "@/utils/utils";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Modal,
@@ -15,34 +15,52 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import CustomSpinner from "./ui/DurationSpinner";
 
-const EmptyEvent: EventType = {
-  title: "",
-  startDate: new Date(),
-  endDate: new Date(),
-  repeat: null,
-  startTime: new Date(),
-  endTime: new Date(new Date().getTime() + 60 * 60 * 1000),
-  notes: "",
-  color: "",
-  alarms: [],
+const createEmptyEvent = (selectedDate?: Date): EventType => {
+  const date = selectedDate || new Date();
+  const now = new Date();
+  const startTime = new Date(date);
+  startTime.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+  
+  return {
+    title: "",
+    startDate: date,
+    endDate: date,
+    repeat: null,
+    startTime: startTime,
+    endTime: endTime,
+    notes: "",
+    color: "",
+    alarms: [],
+  };
 };
 
 type AddEventModalProps = {
   openAddModal: boolean;
   setOpenAddModal: (open: boolean) => void;
   onAddEvent: (event: EventType) => void;
+  onUpdateEvent?: (event: EventType) => void;
+  onDeleteEvent?: (eventId: string) => void;
+  editingEvent?: EventType | null;
+  selectedDate?: Date;
 };
 
 const AddEventModal = ({
   openAddModal,
   setOpenAddModal,
   onAddEvent,
+  onUpdateEvent,
+  onDeleteEvent,
+  editingEvent,
+  selectedDate,
 }: AddEventModalProps) => {
-  const [event, setEvent] = useState<EventType>(EmptyEvent);
+  const [event, setEvent] = useState<EventType>(() => createEmptyEvent(selectedDate));
+  const isEditing = !!editingEvent;
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
@@ -52,7 +70,21 @@ const AddEventModal = ({
   const [time, setTime] = useState<Date | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
 
-  // Slide-to-close support
+  useEffect(() => {
+    if (openAddModal) {
+      if (editingEvent) {
+        setEvent(editingEvent);
+        setTime(editingEvent.startTime);
+        const diff = (editingEvent.endTime.getTime() - editingEvent.startTime.getTime()) / (1000 * 60 * 60);
+        setDuration(diff);
+      } else {
+        setEvent(createEmptyEvent(selectedDate));
+        setTime(null);
+        setDuration(null);
+      }
+    }
+  }, [openAddModal, editingEvent, selectedDate]);
+
   const translateY = useRef(new Animated.Value(0)).current;
   const handleClose = () => {
     setOpenAddModal(false);
@@ -61,7 +93,10 @@ const AddEventModal = ({
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_evt, gesture) => Math.abs(gesture.dy) > 6,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_evt, gesture) => {
+        return Math.abs(gesture.dy) > 10 && Math.abs(gesture.dy) > Math.abs(gesture.dx);
+      },
       onPanResponderMove: (_evt, gesture) => {
         if (gesture.dy > 0) {
           translateY.setValue(gesture.dy);
@@ -131,6 +166,12 @@ const AddEventModal = ({
     setShowTimePicker(Platform.OS === "ios");
     if (selectedTime) {
       setTime(selectedTime);
+      const newEndTime = new Date(selectedTime.getTime() + (duration || 1) * 60 * 60 * 1000);
+      setEvent({
+        ...event,
+        startTime: selectedTime,
+        endTime: newEndTime,
+      });
       setShowDurationPicker(true);
     }
   };
@@ -155,10 +196,25 @@ const AddEventModal = ({
     if (!event.title.trim()) {
       return;
     }
-    onAddEvent(event);
-    setEvent(EmptyEvent);
+    if (isEditing && onUpdateEvent) {
+      onUpdateEvent(event);
+    } else {
+      onAddEvent(event);
+    }
+    setEvent(createEmptyEvent());
     setTime(null);
     setDuration(null);
+    setOpenAddModal(false);
+  };
+
+  const handleDeleteEvent = () => {
+    if (isEditing && onDeleteEvent && event.id) {
+      onDeleteEvent(event.id);
+      setEvent(createEmptyEvent());
+      setTime(null);
+      setDuration(null);
+      setOpenAddModal(false);
+    }
   };
 
   return (
@@ -220,14 +276,13 @@ const AddEventModal = ({
               When?
             </Text>
             <Pressable
-              style={styles.optionsSelector}
+              style={[styles.optionsSelector, styles.timeSelector]}
               onPress={() => setShowTimePicker(true)}
             >
               <Text style={styles.placeholder}>
-                Time: {formatTime(event.startTime)} -{" "}
-                {formatTime(event.endTime)} | {getDuration()}h{" "}
-                <Feather name="clock" size={16} color={Colors.text} />
+                {`Time: ${formatTime(event.startTime)} - ${formatTime(event.endTime)} | ${getDuration()}h`}
               </Text>
+              <Feather name="clock" size={16} color={Colors.text} />
             </Pressable>
             <View style={styles.rowContainer}>
               <Pressable
@@ -303,39 +358,37 @@ const AddEventModal = ({
               </View>
             )}
           </View>
-          <View style={{ ...styles.rowContainer, marginTop: 20 }}>
+          <View style={styles.notesContainer}>
             <TextInput
               placeholder="Add note..."
-              style={{
-                flex: 1,
-                fontFamily: "MontserratBold",
-                fontSize: 14,
-              }}
+              style={styles.notesInput}
               placeholderTextColor={Colors.placeholderText}
               value={event.notes}
               onChangeText={(text) => setEvent({ ...event, notes: text })}
               multiline
             />
-            <LinearGradient
-              colors={[Colors.tabIconSelected, Colors.background]}
-              start={{ x: 1, y: 0 }}
-              end={{ x: 1.1, y: 1 }}
-              style={{ borderRadius: 20 }}
-            >
-              <Pressable onPress={handleAddEvent} style={styles.button}>
-                <Text
-                  style={{
-                    color: Colors.background,
-                    fontFamily: "MontserratBold",
-                  }}
-                >
-                  Add Task
+          </View>
+          <View style={styles.buttonRow}>
+            {isEditing && (
+              <TouchableOpacity onPress={handleDeleteEvent} activeOpacity={0.7} style={styles.deleteButton}>
+                <Feather name="trash-2" size={20} color="#EF4444" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleAddEvent} activeOpacity={0.7} style={styles.submitButtonContainer}>
+              <LinearGradient
+                colors={[Colors.tabIconSelected, Colors.background]}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 1.1, y: 1 }}
+                style={[styles.button, { borderRadius: 20 }]}
+              >
+                <Text style={styles.buttonText}>
+                  {isEditing ? "Update" : "Add Task"}
                 </Text>
-              </Pressable>
-            </LinearGradient>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </Animated.View>
-        {showTimePicker && (
+        {showTimePicker && Platform.OS !== "web" && (
           <DateTimePicker
             value={time || event.startTime}
             mode="time"
@@ -344,7 +397,7 @@ const AddEventModal = ({
             is24Hour
           />
         )}
-        {showDatePicker && (
+        {showDatePicker && Platform.OS !== "web" && (
           <DateTimePicker
             value={event.startDate}
             mode="date"
@@ -352,6 +405,73 @@ const AddEventModal = ({
             onChange={onDateChange}
             is24Hour
           />
+        )}
+        {showTimePicker && Platform.OS === "web" && (
+          <View style={styles.webPickerOverlay}>
+            <View style={styles.webPickerContainer}>
+              <Text style={styles.webPickerTitle}>Select Time</Text>
+              <TextInput
+                style={styles.webPickerInput}
+                placeholder="HH:MM"
+                defaultValue={`${String(event.startTime.getHours()).padStart(2, "0")}:${String(event.startTime.getMinutes()).padStart(2, "0")}`}
+                onChangeText={(text) => {
+                  const [hours, minutes] = text.split(":").map(Number);
+                  if (!isNaN(hours) && !isNaN(minutes)) {
+                    const newTime = new Date();
+                    newTime.setHours(hours, minutes, 0, 0);
+                    setTime(newTime);
+                  }
+                }}
+              />
+              <View style={styles.webPickerButtons}>
+                <Pressable onPress={() => setShowTimePicker(false)} style={styles.webPickerButton}>
+                  <Text>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (time) {
+                      const newEndTime = new Date(time.getTime() + (duration || 1) * 60 * 60 * 1000);
+                      setEvent({ ...event, startTime: time, endTime: newEndTime });
+                    }
+                    setShowTimePicker(false);
+                    setShowDurationPicker(true);
+                  }}
+                  style={[styles.webPickerButton, { backgroundColor: Colors.tabIconSelected }]}
+                >
+                  <Text style={{ color: Colors.background }}>Confirm</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
+        {showDatePicker && Platform.OS === "web" && (
+          <View style={styles.webPickerOverlay}>
+            <View style={styles.webPickerContainer}>
+              <Text style={styles.webPickerTitle}>Select Date</Text>
+              <TextInput
+                style={styles.webPickerInput}
+                placeholder="YYYY-MM-DD"
+                defaultValue={event.startDate.toISOString().split("T")[0]}
+                onChangeText={(text) => {
+                  const date = new Date(text);
+                  if (!isNaN(date.getTime())) {
+                    setEvent({ ...event, startDate: date });
+                  }
+                }}
+              />
+              <View style={styles.webPickerButtons}>
+                <Pressable onPress={() => setShowDatePicker(false)} style={styles.webPickerButton}>
+                  <Text>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setShowDatePicker(false)}
+                  style={[styles.webPickerButton, { backgroundColor: Colors.tabIconSelected }]}
+                >
+                  <Text style={{ color: Colors.background }}>Confirm</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
         )}
       </View>
     </Modal>
@@ -394,6 +514,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignSelf: "flex-start",
   },
+  timeSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   rowContainer: {
     display: "flex",
     flexDirection: "row",
@@ -407,9 +532,38 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   button: {
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     alignItems: "center",
+    justifyContent: "center",
   },
+  buttonText: {
+    color: Colors.background,
+    fontFamily: "MontserratBold",
+    fontSize: 14,
+  },
+  notesContainer: {
+    marginTop: 12,
+  },
+  notesInput: {
+    fontFamily: "MontserratBold",
+    fontSize: 14,
+    minHeight: 40,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 16,
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+  submitButtonContainer: {},
   dragHandle: {
     width: 40,
     height: 4,
@@ -417,6 +571,49 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: "center",
     marginBottom: 10,
+  },
+  webPickerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  webPickerContainer: {
+    backgroundColor: Colors.modalBackground,
+    padding: 20,
+    borderRadius: 16,
+    minWidth: 280,
+    alignItems: "center",
+  },
+  webPickerTitle: {
+    fontSize: 18,
+    fontFamily: "MontserratBold",
+    marginBottom: 16,
+  },
+  webPickerInput: {
+    borderWidth: 1,
+    borderColor: Colors.tabIconSelected,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    width: "100%",
+    textAlign: "center",
+    fontFamily: "Montserrat",
+  },
+  webPickerButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  webPickerButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
 });
 

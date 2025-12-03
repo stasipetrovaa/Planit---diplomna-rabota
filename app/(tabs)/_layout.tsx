@@ -6,7 +6,7 @@ import SearchIcon from "@/assets/images/search.svg";
 import { EventType } from "@/types/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import AddEventModal from "@/components/AddEventModal";
@@ -15,31 +15,66 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useCalendar } from "@/contexts/calendar-context";
 
+type EventModalContextType = {
+  openEventModal: (event?: EventType) => void;
+};
+
+const EventModalContext = createContext<EventModalContextType>({
+  openEventModal: () => {},
+});
+
+export const useEventModal = () => useContext(EventModalContext);
+
 export default function TabLayout() {
   const [openAddModal, setOpenAddModal] = useState(false);
-  const { addEvent } = useCalendar();
+  const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
+  const { addEvent, updateEvent, deleteEvent, getEvents, today } = useCalendar();
 
   const createEvent = async (event: EventType) => {
     try {
-      const eventId = await addEvent(event);
-      if (eventId) {
-        setTimeout(() => {
-          setOpenAddModal(false);
-        }, 600);
-      }
+      await addEvent(event);
     } catch (error) {
       console.error("Error creating event:", error);
     }
   };
 
+  const handleUpdateEvent = async (event: EventType) => {
+    try {
+      await updateEvent(event);
+    } catch (error) {
+      console.error("Error updating event:", error);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEvent(eventId);
+    } catch (error) {
+      console.error("Error deleting event:", error);
+    }
+  };
+
+  const handleOpenModal = (event?: EventType) => {
+    setEditingEvent(event || null);
+    setOpenAddModal(true);
+  };
+
+  const handleCloseModal = (open: boolean) => {
+    if (!open) {
+      setEditingEvent(null);
+    }
+    setOpenAddModal(open);
+  };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: Colors.background,
-      }}
-    >
-      <Tabs
+    <EventModalContext.Provider value={{ openEventModal: handleOpenModal }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors.background,
+        }}
+      >
+        <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors.tint,
           headerShown: false,
@@ -109,20 +144,16 @@ export default function TabLayout() {
 
       <AddEventModal
         openAddModal={openAddModal}
-        setOpenAddModal={setOpenAddModal}
+        setOpenAddModal={handleCloseModal}
         onAddEvent={createEvent}
+        onUpdateEvent={handleUpdateEvent}
+        onDeleteEvent={handleDeleteEvent}
+        editingEvent={editingEvent}
+        selectedDate={today}
       />
 
-      {/* {snackOpen && (
-        <Snackbar
-          visible={snackOpen}
-          onDismiss={() => setSnackOpen(false)}
-          duration={2000}
-        >
-          Event created
-        </Snackbar>
-      )} */}
-    </View>
+      </View>
+    </EventModalContext.Provider>
   );
 }
 

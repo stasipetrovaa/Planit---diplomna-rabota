@@ -12,4 +12,5 @@ export type EventType = {
   color?: string;
   alarms?: any[];
   location?: string;
+  completed?: boolean;
 };
