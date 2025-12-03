@@ -3,23 +3,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { useHeader } from "@/contexts/header-context";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
-import { useRef, useState, useEffect } from "react";
-import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function Header() {
-  const { title, subtitle, viewMode, toggleViewMode } = useHeader();
+  const { title, subtitle, toggleViewMode } = useHeader();
   const { logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
-  const slideAnim = useRef(new Animated.Value(viewMode === "today" ? 0 : 1)).current;
-
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: viewMode === "today" ? 0 : 1,
-      useNativeDriver: false,
-      tension: 100,
-      friction: 10,
-    }).start();
-  }, [viewMode, slideAnim]);
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -30,9 +20,6 @@ export default function Header() {
     logout();
   };
 
-  const toggleWidth = 72;
-  const buttonWidth = 36;
-
   return (
     <View style={styles.header}>
       <View style={styles.headerText}>
@@ -40,44 +27,13 @@ export default function Header() {
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
       <View style={styles.menus}>
-        <View style={[styles.toggleContainer, { width: toggleWidth }]}>
-          <Animated.View
-            style={[
-              styles.toggleIndicator,
-              {
-                width: buttonWidth,
-                transform: [
-                  {
-                    translateX: slideAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, buttonWidth],
-                    }),
-                  },
-                ],
-              },
-            ]}
+        <Pressable onPress={toggleViewMode} style={styles.calendarIcon}>
+          <Feather
+            name="calendar"
+            size={24}
+            color={Colors.tabIconSelected}
           />
-          <Pressable
-            onPress={() => viewMode !== "today" && toggleViewMode()}
-            style={[styles.toggleButton, { width: buttonWidth }]}
-          >
-            <Feather
-              name="list"
-              size={18}
-              color={viewMode === "today" ? "white" : Colors.placeholderText}
-            />
-          </Pressable>
-          <Pressable
-            onPress={() => viewMode !== "calendar" && toggleViewMode()}
-            style={[styles.toggleButton, { width: buttonWidth }]}
-          >
-            <Feather
-              name="calendar"
-              size={18}
-              color={viewMode === "calendar" ? "white" : Colors.placeholderText}
-            />
-          </Pressable>
-        </View>
+        </Pressable>
 
         <View>
           <Pressable onPress={toggleMenu} style={styles.icon}>
@@ -137,31 +93,14 @@ const styles = StyleSheet.create({
   icon: {
     padding: 6,
   },
+  calendarIcon: {
+    padding: 6,
+    marginRight: 8,
+  },
   menus: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    borderRadius: 20,
-    backgroundColor: "#F0EDFF",
-    height: 36,
-    position: "relative",
-    alignItems: "center",
-  },
-  toggleIndicator: {
-    position: "absolute",
-    height: 32,
-    backgroundColor: Colors.tabIconSelected,
-    borderRadius: 16,
-    left: 2,
-  },
-  toggleButton: {
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
   },
   menuBackdrop: {
     position: "fixed" as any,

@@ -8,25 +8,13 @@ interface ItemProps {
   item: EventType;
   onPress?: (item: EventType) => void;
   onToggleComplete?: (item: EventType) => void;
+  showCheckbox?: boolean;
 }
 
-const AgendaItem = ({ item, onPress, onToggleComplete }: ItemProps) => {
+const AgendaItem = ({ item, onPress, onToggleComplete, showCheckbox = true }: ItemProps) => {
   const formatTime = (date: Date) => {
     if (!date) return "";
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const getDuration = () => {
-    if (!item.endTime || !item.startTime) return "";
-    const diff = item.endTime.getTime() - item.startTime.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 0) {
-      return `${hours}h${minutes > 0 ? ` ${minutes}m` : ""}`;
-    } else {
-      return `${minutes}m`;
-    }
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
   };
 
   const handlePress = () => {
@@ -35,40 +23,53 @@ const AgendaItem = ({ item, onPress, onToggleComplete }: ItemProps) => {
     }
   };
 
-  const handleToggleComplete = () => {
-    if (onToggleComplete) {
+  const handleToggleComplete = (e: any) => {
+    e.stopPropagation();
+    if (onToggleComplete && showCheckbox) {
       onToggleComplete(item);
     }
   };
 
   if (!item) {
-    return (
-      <View style={styles.emptyItem}>
-        <Text style={styles.emptyItemText}>No Events Planned Today</Text>
-      </View>
-    );
+    return null;
   }
 
   const isCompleted = item.completed;
 
   return (
-    <TouchableOpacity onPress={handlePress} style={[styles.item, isCompleted && styles.itemCompleted]} activeOpacity={0.7}>
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[styles.item, isCompleted && styles.itemCompleted]}
+      activeOpacity={0.7}
+    >
       <View
-        style={[styles.colorBar, { backgroundColor: item.color || "#3B82F6", opacity: isCompleted ? 0.5 : 1 }]}
+        style={[styles.colorBar, { backgroundColor: item.color || "#6B9FEB" }]}
       />
-      <View style={styles.timeContainer}>
-        <Text style={[styles.itemHourText, isCompleted && styles.textCompleted]}>{formatTime(item.startTime)}</Text>
-        <Text style={[styles.itemDurationText, isCompleted && styles.textCompleted]}>{getDuration()}</Text>
-      </View>
-      <View style={styles.titleContainer}>
-        <Text style={[styles.itemTitleText, isCompleted && styles.textCompleted, isCompleted && styles.strikethrough]}>{item.title}</Text>
-        {item.notes && <Text style={[styles.itemNotesText, isCompleted && styles.textCompleted]}>{item.notes}</Text>}
-      </View>
-      <TouchableOpacity onPress={handleToggleComplete} style={styles.checkbox} activeOpacity={0.6}>
-        <View style={[styles.checkboxInner, isCompleted && styles.checkboxChecked]}>
-          {isCompleted && <Feather name="check" size={14} color="white" />}
+      <View style={styles.contentContainer}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.itemTitleText, isCompleted && styles.strikethrough]}>
+            {item.title}
+          </Text>
         </View>
-      </TouchableOpacity>
+        <View style={styles.timeRow}>
+          <Feather name="clock" size={12} color="#999" style={styles.clockIcon} />
+          <Text style={styles.timeText}>
+            {formatTime(item.startTime)} - {formatTime(item.endTime)}
+          </Text>
+        </View>
+      </View>
+      {showCheckbox && (
+        <TouchableOpacity
+          onPress={handleToggleComplete}
+          style={styles.checkbox}
+          activeOpacity={0.6}
+          disabled={!onToggleComplete}
+        >
+          <View style={[styles.checkboxInner, isCompleted && styles.checkboxChecked]}>
+            {isCompleted && <Feather name="check" size={12} color="white" />}
+          </View>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 };
@@ -77,99 +78,76 @@ export default memo(AgendaItem);
 
 const styles = StyleSheet.create({
   item: {
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "lightgrey",
     flexDirection: "row",
-    marginHorizontal: 16,
     marginVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
     alignItems: "center",
   },
   itemCompleted: {
-    backgroundColor: "#f8f8f8",
-    opacity: 0.8,
-  },
-  checkbox: {
-    marginLeft: 12,
-    padding: 4,
-  },
-  checkboxInner: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: Colors.tabIconSelected,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.tabIconSelected,
-    borderColor: Colors.tabIconSelected,
+    backgroundColor: "#F9F9F9",
+    opacity: 0.7,
   },
   colorBar: {
     width: 4,
     height: "100%",
-    minHeight: 40,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
-    marginRight: 10,
+    minHeight: 44,
+    borderRadius: 2,
+    marginRight: 12,
   },
-  timeContainer: {
-    width: 60,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemHourText: {
-    color: "black",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  itemDurationText: {
-    color: "grey",
-    fontSize: 10,
-    marginTop: 2,
-  },
-  titleContainer: {
+  contentContainer: {
     flex: 1,
-    marginLeft: 12,
     justifyContent: "center",
   },
-  itemTitleText: {
-    color: "black",
-    fontWeight: "bold",
-    fontSize: 16,
+  titleRow: {
     marginBottom: 4,
   },
-  itemNotesText: {
-    color: "grey",
-    fontSize: 12,
-    fontStyle: "italic",
+  itemTitleText: {
+    color: "#1A1A1A",
+    fontFamily: "MontserratBold",
+    fontSize: 15,
   },
-  textCompleted: {
-    color: "#999",
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  clockIcon: {
+    marginRight: 4,
+  },
+  timeText: {
+    color: "#666",
+    fontSize: 12,
+    fontFamily: "Montserrat",
   },
   strikethrough: {
     textDecorationLine: "line-through",
+    color: "#999",
   },
-  emptyItem: {
-    paddingLeft: 20,
-    height: 52,
+  checkbox: {
+    padding: 4,
+  },
+  checkboxInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#D0D0D0",
+    alignItems: "center",
     justifyContent: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "lightgrey",
+    backgroundColor: "white",
   },
-  emptyItemText: {
-    color: "lightgrey",
-    fontSize: 14,
+  checkboxChecked: {
+    backgroundColor: Colors.tabIconSelected,
+    borderColor: Colors.tabIconSelected,
   },
 });

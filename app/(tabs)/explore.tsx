@@ -3,118 +3,152 @@ import { Colors } from "@/constants/Colors";
 import { useCalendar } from "@/contexts/calendar-context";
 import { EventType } from "@/types/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEventModal } from "./_layout";
+import { Feather } from "@expo/vector-icons";
 
 export default function ExploreScreen() {
-  const { events, getEvents, toggleEventComplete } = useCalendar();
+  const { events, getEvents } = useCalendar();
   const { openEventModal } = useEventModal();
   const [query, setQuery] = useState("");
-  const [visibleMonth, setVisibleMonth] = useState(new Date());
 
   const handleEventPress = useCallback((event: EventType) => {
     openEventModal(event);
   }, [openEventModal]);
 
-  const handleToggleComplete = useCallback((event: EventType) => {
-    toggleEventComplete(event);
-  }, [toggleEventComplete]);
-
+  // Load all events
   useEffect(() => {
-    const ym = visibleMonth;
-    const start = new Date(ym.getFullYear(), ym.getMonth(), 1, 0, 0, 0, 0);
-    const end = new Date(
-      ym.getFullYear(),
-      ym.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999
-    );
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 3, 0);
     getEvents(start, end);
-  }, [visibleMonth]);
+  }, []);
 
+  // Filter events by search query
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return events;
     return events.filter((e) => e.title.toLowerCase().includes(q));
   }, [events, query]);
 
-  const groupedByDay = useMemo(() => {
-    const map: Record<string, typeof filtered> = {};
-    filtered.forEach((e) => {
-      const key = e.startDate.toISOString().split("T")[0];
-      if (!map[key]) map[key] = [];
-      map[key].push(e);
+  // Sort all events by date and time
+  const sortedEvents = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const dateCompare = a.startDate.getTime() - b.startDate.getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return a.startTime.getTime() - b.startTime.getTime();
     });
-    const entries = Object.entries(map).sort((a, b) =>
-      a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0
-    );
-    return entries;
   }, [filtered]);
 
-  const monthLabel = useMemo(() => {
-    return visibleMonth.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "long",
+  // Group events by date for display
+  const groupedByDate = useMemo(() => {
+    const grouped: { date: string; dateObj: Date; events: EventType[] }[] = [];
+
+    sortedEvents.forEach((event) => {
+      const dateKey = event.startDate.toISOString().split("T")[0];
+
+      let dateGroup = grouped.find(g => g.date === dateKey);
+      if (!dateGroup) {
+        dateGroup = {
+          date: dateKey,
+          dateObj: new Date(event.startDate),
+          events: []
+        };
+        grouped.push(dateGroup);
+      }
+
+      dateGroup.events.push(event);
     });
-  }, [visibleMonth]);
+
+    return grouped;
+  }, [sortedEvents]);
+
+  const formatDateHeader = (date: Date) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    today.setHours(0, 0, 0, 0);
+    tomorrow.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    if (checkDate.getTime() === today.getTime()) {
+      return "Today";
+    } else if (checkDate.getTime() === tomorrow.getTime()) {
+      return "Tomorrow";
+    } else {
+      const day = date.toLocaleDateString("en-US", { weekday: "short" });
+      const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      return `${day}, ${monthDay}`;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{monthLabel}</Text>
-        <Text style={styles.subtitle}>All events</Text>
+        <View>
+          <Text style={styles.title}>Schedule</Text>
+          <Text style={styles.subtitle}>All your events</Text>
+        </View>
       </View>
 
-      <TextInput
-        placeholder="Search by title"
-        value={query}
-        onChangeText={setQuery}
-        style={styles.search}
-        placeholderTextColor={Colors.placeholderText}
-      />
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#999" style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search events..."
+          value={query}
+          onChangeText={setQuery}
+          style={styles.search}
+          placeholderTextColor="#999"
+        />
+      </View>
 
-      {groupedByDay.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No events this month</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={groupedByDay}
-          keyExtractor={([date]) => date}
-          renderItem={({ item: [date, dayEvents] }) => (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {new Date(date).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </Text>
-              {dayEvents
-                .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
-                .map((ev, index) => {
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {groupedByDate.length === 0 ? (
+          <View style={styles.empty}>
+            <Feather name="calendar" size={48} color="#DDD" />
+            <Text style={styles.emptyText}>
+              {query ? "No events found" : "No events scheduled"}
+            </Text>
+          </View>
+        ) : (
+          groupedByDate.map((dateGroup, groupIndex) => (
+            <View key={dateGroup.date} style={styles.dateSection}>
+              <View style={styles.dateHeaderContainer}>
+                <View style={styles.dateBadge}>
+                  <Feather name="calendar" size={14} color={Colors.tabIconSelected} />
+                  <Text style={styles.dateHeaderText}>
+                    {formatDateHeader(dateGroup.dateObj)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.eventsContainer}>
+                {dateGroup.events.map((item, index) => {
                   const key =
-                    ev.id ||
-                    `${
-                      ev.title
-                    }-${ev.startDate.toISOString()}-${ev.startTime.toISOString()}-${index}`;
+                    item.id ||
+                    `${item.title}-${item.startDate.toISOString()}-${item.startTime.toISOString()}-${index}`;
                   return (
-                    <AgendaItem
-                      key={key}
-                      item={ev}
-                      onPress={handleEventPress}
-                      onToggleComplete={handleToggleComplete}
-                    />
+                    <View key={key} style={styles.eventWrapper}>
+                      <AgendaItem
+                        item={item}
+                        onPress={handleEventPress}
+                        showCheckbox={false}
+                      />
+                    </View>
                   );
                 })}
+              </View>
             </View>
-          )}
-        />
-      )}
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -122,58 +156,106 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#FAFAFA",
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
-    color: Colors.text,
+    color: "#1A1A1A",
     fontFamily: "MontserratBold",
-    fontSize: 20,
+    fontSize: 28,
+    marginBottom: 4,
   },
   subtitle: {
-    color: Colors.placeholderText,
+    color: "#666",
     fontFamily: "Montserrat",
-    fontSize: 12,
+    fontSize: 14,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 12,
   },
   search: {
-    borderWidth: 1.5,
-    borderColor: Colors.tabIconSelected,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    color: Colors.text,
+    flex: 1,
+    paddingVertical: 14,
+    color: "#1A1A1A",
     fontFamily: "Montserrat",
+    fontSize: 15,
   },
-  calendar: {
-    marginHorizontal: 8,
-    marginBottom: 8,
-    borderRadius: 8,
+  scrollView: {
+    flex: 1,
   },
-  section: {
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 2,
-  },
-  sectionTitle: {
-    color: Colors.text,
-    fontFamily: "MontserratBold",
-    fontSize: 14,
-    marginLeft: 8,
-    marginBottom: 4,
+  scrollContent: {
+    paddingBottom: 100,
   },
   empty: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingTop: 80,
   },
   emptyText: {
-    color: Colors.placeholderText,
+    color: "#999",
     fontFamily: "Montserrat",
+    fontSize: 16,
+    marginTop: 16,
+  },
+  dateSection: {
+    marginBottom: 24,
+  },
+  dateHeaderContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  dateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0EDFF",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+    shadowColor: Colors.tabIconSelected,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dateHeaderText: {
+    fontSize: 12,
+    fontFamily: "MontserratBold",
+    color: Colors.tabIconSelected,
+    marginLeft: 8,
+  },
+  eventsContainer: {
+    gap: 8,
+  },
+  eventWrapper: {
+    paddingHorizontal: 20,
   },
 });
