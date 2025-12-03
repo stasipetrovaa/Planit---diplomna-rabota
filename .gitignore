@@ -40,3 +40,5 @@ app-example
 
 .vscode/
 android/
+
+planit_changes.patch
