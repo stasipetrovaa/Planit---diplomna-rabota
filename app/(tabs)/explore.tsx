@@ -75,7 +75,7 @@ export default function ExploreScreen() {
     checkDate.setHours(0, 0, 0, 0);
 
     if (checkDate.getTime() === today.getTime()) {
-      return "Today";
+      return "Schedule";
     } else if (checkDate.getTime() === tomorrow.getTime()) {
       return "Tomorrow";
     } else {
@@ -87,12 +87,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Schedule</Text>
-          <Text style={styles.subtitle}>All your events</Text>
-        </View>
-      </View>
+
 
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#999" style={styles.searchIcon} />
@@ -156,43 +151,26 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: Colors.background, // Use main background
+    paddingTop: 16, // Add top padding since header is gone
   },
   header: {
+    // keeping empty style just in case it's ref'd or to hold space if needed, 
+    // but effectively it's not used now.
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    paddingBottom: 8,
   },
-  title: {
-    color: "#1A1A1A",
-    fontFamily: "MontserratBold",
-    fontSize: 28,
-    marginBottom: 4,
-  },
-  subtitle: {
-    color: "#666",
-    fontFamily: "Montserrat",
-    fontSize: 14,
-  },
+  // ... title/subtitle unused now ...
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: "#EFF0F6", // Filled style matching other inputs
     borderRadius: 16,
     marginHorizontal: 20,
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 24, // More space below search
+    paddingHorizontal: 20,
+    paddingVertical: 4, // Inner padding for input
+    // Removed shadows for cleaner "filled" look
   },
   searchIcon: {
     marginRight: 12,
@@ -200,9 +178,9 @@ const styles = StyleSheet.create({
   search: {
     flex: 1,
     paddingVertical: 14,
-    color: "#1A1A1A",
+    color: Colors.text,
     fontFamily: "Montserrat",
-    fontSize: 15,
+    fontSize: 16,
   },
   scrollView: {
     flex: 1,
@@ -217,7 +195,7 @@ const styles = StyleSheet.create({
     paddingTop: 80,
   },
   emptyText: {
-    color: "#999",
+    color: Colors.placeholderText,
     fontFamily: "Montserrat",
     fontSize: 16,
     marginTop: 16,
@@ -232,28 +210,22 @@ const styles = StyleSheet.create({
   dateBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0EDFF",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-    shadowColor: Colors.tabIconSelected,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    // Make date badge more subtle/clean
+    backgroundColor: "transparent",
+    paddingHorizontal: 0,
+    marginBottom: 4,
+    // Removed shadows and background for simple text header look
   },
   dateHeaderText: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: "MontserratBold",
     color: Colors.tabIconSelected,
     marginLeft: 8,
+    textTransform: "uppercase", // Uppercase for header style
+    letterSpacing: 0.5,
   },
   eventsContainer: {
-    gap: 8,
+    gap: 12, // Increased gap between events
   },
   eventWrapper: {
     paddingHorizontal: 20,

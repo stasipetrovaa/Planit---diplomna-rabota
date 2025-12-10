@@ -20,7 +20,7 @@ type EventModalContextType = {
 };
 
 const EventModalContext = createContext<EventModalContextType>({
-  openEventModal: () => {},
+  openEventModal: () => { },
 });
 
 export const useEventModal = () => useContext(EventModalContext);
@@ -75,82 +75,82 @@ export default function TabLayout() {
         }}
       >
         <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: Colors.tint,
-          headerShown: false,
-          tabBarButton: HapticTab,
-          tabBarShowLabel: false,
-          tabBarBackground: TabBarBackground,
-          tabBarStyle: Platform.select({
-            ios: { ...styles.tabBarStyle },
-            default: { ...styles.tabBarStyle },
-          }),
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ focused }) => (
-              <HomeIcon
-                color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
-                width={32}
-                height={32}
-              />
-            ),
+          screenOptions={{
+            tabBarActiveTintColor: Colors.tint,
+            headerShown: false,
+            tabBarButton: HapticTab,
+            tabBarShowLabel: false,
+            tabBarBackground: TabBarBackground,
+            tabBarStyle: Platform.select({
+              ios: { ...styles.tabBarStyle },
+              default: { ...styles.tabBarStyle },
+            }),
           }}
-        />
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: "Home",
+              tabBarIcon: ({ focused }) => (
+                <HomeIcon
+                  color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
+                  width={32}
+                  height={32}
+                />
+              ),
+            }}
+          />
 
-        <Tabs.Screen
-          name="add"
-          options={{
-            title: "Add",
-            tabBarIcon: () => (
-              <LinearGradient
-                colors={[Colors.tabIconSelected, Colors.background]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.plusIcon}
-              >
-                <PlusIcon width={80} height={80} style={{ marginTop: 10 }} />
-              </LinearGradient>
-            ),
-            tabBarButton: (props) => (
-              <HapticTab
-                {...props}
-                onPress={() => {
-                  // props.onPress?.();
-                  setOpenAddModal(true);
-                }}
-              />
-            ),
-          }}
-        />
+          <Tabs.Screen
+            name="add"
+            options={{
+              title: "Add",
+              tabBarIcon: () => (
+                <LinearGradient
+                  colors={[Colors.tabIconSelected, Colors.background]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.plusIcon}
+                >
+                  <PlusIcon width={80} height={80} style={{ marginTop: 10 }} />
+                </LinearGradient>
+              ),
+              tabBarButton: (props) => (
+                <HapticTab
+                  {...props}
+                  onPress={() => {
+                    // props.onPress?.();
+                    setOpenAddModal(true);
+                  }}
+                />
+              ),
+            }}
+          />
 
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: "Explore",
-            tabBarIcon: ({ focused }) => (
-              <SearchIcon
-                color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
-                width={32}
-                height={32}
-              />
-            ),
-          }}
-        />
-      </Tabs>
+          <Tabs.Screen
+            name="explore"
+            options={{
+              title: "Explore",
+              tabBarIcon: ({ focused }) => (
+                <SearchIcon
+                  color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
+                  width={32}
+                  height={32}
+                />
+              ),
+            }}
+          />
+        </Tabs>
 
-      <AddEventModal
-        openAddModal={openAddModal}
-        setOpenAddModal={handleCloseModal}
-        onAddEvent={createEvent}
-        onUpdateEvent={handleUpdateEvent}
-        onDeleteEvent={handleDeleteEvent}
-        editingEvent={editingEvent}
-        selectedDate={today}
-      />
+        <AddEventModal
+          openAddModal={openAddModal}
+          setOpenAddModal={handleCloseModal}
+          onAddEvent={createEvent}
+          onUpdateEvent={handleUpdateEvent}
+          onDeleteEvent={handleDeleteEvent}
+          editingEvent={editingEvent}
+          selectedDate={today}
+        />
 
       </View>
     </EventModalContext.Provider>

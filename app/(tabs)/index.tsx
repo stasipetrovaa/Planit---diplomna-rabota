@@ -84,9 +84,7 @@ export default function HomeScreen() {
         onDateSelect={handleDaySelect}
       />
 
-      <View style={styles.scheduleHeader}>
-        <Text style={styles.scheduleTitle}>Schedule</Text>
-      </View>
+
 
       <ScrollView
         style={styles.scrollView}
@@ -142,16 +140,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.background,
     flex: 1,
-  },
-  scheduleHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  scheduleTitle: {
-    fontSize: 18,
-    fontFamily: "MontserratBold",
-    color: "#1A1A1A",
   },
   scrollView: {
     flex: 1,

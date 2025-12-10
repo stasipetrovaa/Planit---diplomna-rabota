@@ -26,7 +26,7 @@ const createEmptyEvent = (selectedDate?: Date): EventType => {
   const startTime = new Date(date);
   startTime.setHours(now.getHours(), now.getMinutes(), 0, 0);
   const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-  
+
   return {
     title: "",
     startDate: date,
@@ -150,15 +150,14 @@ const AddEventModal = ({
     if (event.repeat === "weekly")
       return `Every ${getWeekday(event.startDate)}`;
     if (event.repeat === "monthly")
-      return `On the ${dayOfMonth}${
-        dayOfMonth === 1
-          ? "st"
-          : dayOfMonth === 2
+      return `On the ${dayOfMonth}${dayOfMonth === 1
+        ? "st"
+        : dayOfMonth === 2
           ? "nd"
           : dayOfMonth === 3
-          ? "rd"
-          : "th"
-      }`;
+            ? "rd"
+            : "th"
+        }`;
     if (event.repeat === "yearly") return "Yearly";
   };
 
@@ -259,10 +258,10 @@ const AddEventModal = ({
           }}
           {...panResponder.panHandlers}
         >
-          <Pressable onPress={handleClose} style={{ width: "100%" }}>
+          <Pressable onPress={handleClose} style={{ width: "100%", alignItems: "center" }}>
             <View style={styles.dragHandle} />
           </Pressable>
-          <View style={{ maxWidth: "80%", gap: 12 }}>
+          <View style={{ width: "100%", gap: 16 }}>
             <TextInput
               style={styles.input}
               placeholder="Enter event title"
@@ -289,12 +288,15 @@ const AddEventModal = ({
                 style={styles.optionsSelector}
                 onPress={() => setShowDatePicker(true)}
               >
+                <Feather name="calendar" size={16} color={Colors.text} />
                 <Text style={styles.placeholder}>{renderDate()}</Text>
               </Pressable>
+
               <Pressable
                 style={styles.optionsSelector}
                 onPress={() => setShowRepeatPicker(true)}
               >
+                <Feather name="repeat" size={16} color={Colors.text} />
                 <Text style={styles.placeholder}>{renderRepeat()}</Text>
               </Pressable>
 
@@ -302,21 +304,28 @@ const AddEventModal = ({
                 style={styles.optionsSelector}
                 onPress={() => setShowColorPicker((v) => !v)}
               >
+                <Feather name="disc" size={16} color={Colors.text} />
                 <Text style={styles.placeholder}>
                   {event.color ? `Color` : "Color"}
                 </Text>
               </Pressable>
+
               {event.color && (
                 <View
                   style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
                     backgroundColor: event.color,
                     alignSelf: "center",
-                    marginLeft: 6,
-                    borderWidth: 1,
-                    borderColor: Colors.tabIconSelected,
+                    marginLeft: 4,
+                    borderWidth: 1.5,
+                    borderColor: "white",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
                   }}
                 />
               )}
@@ -376,13 +385,13 @@ const AddEventModal = ({
             )}
             <TouchableOpacity onPress={handleAddEvent} activeOpacity={0.7} style={styles.submitButtonContainer}>
               <LinearGradient
-                colors={[Colors.tabIconSelected, Colors.background]}
-                start={{ x: 1, y: 0 }}
-                end={{ x: 1.1, y: 1 }}
-                style={[styles.button, { borderRadius: 20 }]}
+                colors={[Colors.tabIconSelected, "#8B5CF6"]} // Updated gradient
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.button, { borderRadius: 16 }]}
               >
                 <Text style={styles.buttonText}>
-                  {isEditing ? "Update" : "Add Task"}
+                  {isEditing ? "Update Task" : "Add Task"}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -482,95 +491,131 @@ const styles = StyleSheet.create({
   modalOverlay: {
     position: "relative",
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.22)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)", // Slightly darker overlay
     justifyContent: "flex-end",
     alignItems: "center",
   },
   modalContent: {
-    width: "90%",
-    boxShadow: "0px 10px 32px rgba(0, 0, 0, 0.13)",
+    width: "100%", // Full width bottom sheet
     backgroundColor: Colors.modalBackground,
-    borderRadius: 16,
-    borderColor: "#F2F0FF",
-    borderWidth: 1,
-    padding: 20,
-    marginBottom: "30%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
   },
   input: {
-    fontSize: 20,
+    width: "100%",
+    backgroundColor: "#F7F7F7", // Light gray filled
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    color: Colors.text,
     fontFamily: "MontserratBold",
+    fontSize: 18,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
   placeholder: {
     color: Colors.text,
     fontFamily: "MontserratBold",
     fontSize: 14,
-    fontWeight: "600",
   },
   optionsSelector: {
-    borderWidth: 1.5,
-    borderColor: Colors.tabIconSelected,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    backgroundColor: "#F7F7F7", // Filled style
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#E5E5E5", // Subtle border for distinctiveness
+    flexDirection: "row", // Align icon and text
+    alignItems: "center",
+    gap: 8, // Space between icon and text
   },
   timeSelector: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "space-between",
+    width: "100%", // Full width for time selector
+    marginBottom: 8,
   },
   rowContainer: {
-    display: "flex",
     flexDirection: "row",
-    gap: 4,
-    alignSelf: "stretch",
+    flexWrap: "wrap", // Allow wrapping
+    gap: 10,
+    marginTop: 4,
   },
   colorGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 12,
+    gap: 8,
   },
   button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
+    width: "100%",
   },
   buttonText: {
-    color: Colors.background,
+    color: "white",
     fontFamily: "MontserratBold",
-    fontSize: 14,
+    fontSize: 16,
   },
   notesContainer: {
-    marginTop: 12,
+    marginTop: 16,
+    marginBottom: 8,
   },
   notesInput: {
-    fontFamily: "MontserratBold",
-    fontSize: 14,
-    minHeight: 40,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 16,
+    padding: 20,
+    paddingTop: 20, // Ensure text starts at top
+    minHeight: 100,
+    color: Colors.text,
+    fontFamily: "Montserrat",
+    fontSize: 15,
+    textAlignVertical: "top", // Android specific
   },
   buttonRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
-    marginTop: 16,
+    marginTop: 20,
     gap: 12,
   },
   deleteButton: {
-    padding: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#EF4444",
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: "#FEF2F2",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  submitButtonContainer: {},
+  submitButtonContainer: {
+    flex: 1,
+    shadowColor: Colors.tabIconSelected,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   dragHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Colors.placeholderText,
-    borderRadius: 2,
+    width: 48,
+    height: 5,
+    backgroundColor: "#E5E5E5",
+    borderRadius: 10,
     alignSelf: "center",
-    marginBottom: 10,
+    marginBottom: 24,
   },
   webPickerOverlay: {
     position: "absolute",
@@ -585,35 +630,44 @@ const styles = StyleSheet.create({
   },
   webPickerContainer: {
     backgroundColor: Colors.modalBackground,
-    padding: 20,
-    borderRadius: 16,
-    minWidth: 280,
+    padding: 24,
+    borderRadius: 24,
+    minWidth: 320,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
   },
   webPickerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "MontserratBold",
-    marginBottom: 16,
+    marginBottom: 20,
+    color: Colors.text,
   },
   webPickerInput: {
-    borderWidth: 1,
-    borderColor: Colors.tabIconSelected,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
     width: "100%",
     textAlign: "center",
-    fontFamily: "Montserrat",
+    fontFamily: "MontserratBold",
+    color: Colors.text,
   },
   webPickerButtons: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
+    gap: 16,
+    marginTop: 24,
+    width: "100%",
   },
   webPickerButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F7F7F7",
   },
 });
 

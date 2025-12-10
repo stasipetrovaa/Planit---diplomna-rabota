@@ -16,8 +16,12 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Create account</Text>
+      <View style={styles.contentContainer}>
+        <View style={{ alignItems: "center", width: "100%", gap: 8 }}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Sign up to get started</Text>
+        </View>
+
         <TextInput
           placeholder="Name"
           placeholderTextColor={Colors.placeholderText}
@@ -36,16 +40,18 @@ export default function SignupScreen() {
           secureTextEntry
           style={styles.input}
         />
-        <LinearGradient
-          colors={[Colors.background, Colors.tabIconSelected]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.buttonGradient}
-        >
-          <Pressable style={styles.button} onPress={onCreate}>
-            <Text style={styles.buttonText}>Create account</Text>
-          </Pressable>
-        </LinearGradient>
+
+        <Pressable onPress={onCreate} style={styles.shadowWrapper}>
+          <LinearGradient
+            colors={[Colors.tabIconSelected, "#8B5CF6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.buttonFilled}
+          >
+            <Text style={styles.buttonTextFilled}>Sign Up</Text>
+          </LinearGradient>
+        </Pressable>
+
         <View style={styles.row}>
           <Text style={styles.muted}>Already have an account?</Text>
           <Link href="/auth/login" style={styles.link}>
@@ -61,42 +67,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 24,
   },
-  card: {
-    width: "88%",
-    backgroundColor: Colors.modalBackground,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#F2F0FF",
-    padding: 20,
-    gap: 12,
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 20,
   },
   title: {
     color: Colors.text,
     fontFamily: "MontserratBold",
-    fontSize: 22,
-    marginBottom: 4,
+    fontSize: 28,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: Colors.placeholderText,
+    fontFamily: "Montserrat",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: Colors.tabIconSelected,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    width: "100%",
+    backgroundColor: "#EFF0F6", // Light gray filled background
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     color: Colors.text,
     fontFamily: "Montserrat",
+    fontSize: 16,
   },
-  buttonGradient: {
-    borderRadius: 10,
+  shadowWrapper: {
+    width: "100%",
+    shadowColor: Colors.tabIconSelected,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+    marginTop: 10,
   },
-  button: {
-    paddingVertical: 12,
+  buttonFilled: {
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
   },
-  buttonText: {
-    color: Colors.background,
+  buttonTextFilled: {
+    color: "white",
     fontFamily: "MontserratBold",
     fontSize: 16,
   },
@@ -104,14 +125,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 8,
+    marginTop: 16,
   },
   muted: {
     color: Colors.placeholderText,
     fontFamily: "Montserrat",
+    fontSize: 14,
   },
   link: {
     color: Colors.tabIconSelected,
     fontFamily: "MontserratBold",
+    fontSize: 14,
   },
 });

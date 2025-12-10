@@ -20,27 +20,31 @@ export default function AuthLanding() {
         <Text style={styles.subtitle}>Organize your days effortlessly</Text>
 
         <View style={styles.buttons}>
-          <LinearGradient
-            colors={[Colors.tabIconSelected, Colors.background]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.buttonGradient}
-          >
-            <Pressable style={styles.button} onPress={goLogin}>
-              <Text style={styles.buttonText}>Log In</Text>
-            </Pressable>
-          </LinearGradient>
+          {/* Filled Gradient Button (Primary) */}
+          <Pressable onPress={goLogin} style={styles.shadowWrapper}>
+            <LinearGradient
+              colors={[Colors.tabIconSelected, "#8B5CF6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonFilled}
+            >
+              <Text style={styles.buttonTextFilled}>Log In</Text>
+            </LinearGradient>
+          </Pressable>
 
-          <LinearGradient
-            colors={[Colors.background, Colors.tabIconSelected]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.buttonGradient}
-          >
-            <Pressable style={styles.button} onPress={goSignup}>
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </Pressable>
-          </LinearGradient>
+          {/* Gradient Border Button (Secondary) */}
+          <Pressable onPress={goSignup}>
+            <LinearGradient
+              colors={[Colors.tabIconSelected, "#8B5CF6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gradientBorderContainer}
+            >
+              <View style={styles.buttonWhiteInner}>
+                <Text style={styles.buttonTextGradient}>Sign Up</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -68,19 +72,44 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat",
   },
   buttons: {
-    gap: 14,
+    gap: 16,
     width: "80%",
   },
-  buttonGradient: {
-    borderRadius: 14,
+  shadowWrapper: {
+    shadowColor: Colors.tabIconSelected,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  button: {
+  buttonFilled: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonTextFilled: {
+    color: "white",
+    fontFamily: "MontserratBold",
+    fontSize: 18,
+  },
+  gradientBorderContainer: {
+    borderRadius: 16,
+    padding: 2, // Thickness of the border
+  },
+  buttonWhiteInner: {
+    backgroundColor: Colors.background,
+    borderRadius: 14, // Slightly less than container to fit
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
   },
-  buttonText: {
-    color: Colors.background,
+  buttonTextGradient: {
+    color: Colors.tabIconSelected,
     fontFamily: "MontserratBold",
-    fontSize: 16,
+    fontSize: 18,
   },
 });
