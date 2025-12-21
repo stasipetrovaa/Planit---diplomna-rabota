@@ -8,7 +8,7 @@ import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-nativ
 
 export default function Header() {
   const { title, subtitle, toggleViewMode } = useHeader();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
 
   const toggleMenu = () => {
@@ -48,6 +48,18 @@ export default function Header() {
             <>
               <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)} />
               <View style={styles.menuDropdown}>
+                {/* Profile Section */}
+                <View style={styles.profileSection}>
+                  <View style={styles.avatarPlaceholder}>
+                    {/* TODO: Add image picker */}
+                    <Ionicons name="person" size={32} color="white" />
+                  </View>
+                  <Text style={styles.userName}>{user?.name || "User"}</Text>
+                  <Text style={styles.userEmail}>{user?.email}</Text>
+                </View>
+
+                <View style={styles.divider} />
+
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={handleLogout}
@@ -112,27 +124,57 @@ const styles = StyleSheet.create({
   },
   menuDropdown: {
     position: "absolute",
-    top: 40,
+    top: 50,
     right: 0,
     backgroundColor: "white",
-    borderRadius: 12,
-    paddingVertical: 8,
-    minWidth: 160,
+    borderRadius: 16,
+    paddingVertical: 16,
+    minWidth: 220,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowRadius: 20,
     elevation: 8,
     zIndex: 999,
+  },
+  profileSection: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.tabIconSelected, // Purple
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  userName: {
+    fontFamily: "MontserratBold",
+    fontSize: 18,
+    color: "#1F2937",
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontFamily: "Montserrat",
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 4,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 12,
   },
   menuItemText: {
