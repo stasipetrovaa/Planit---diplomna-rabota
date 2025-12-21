@@ -4,14 +4,43 @@ import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
 
 export default function SignupScreen() {
-  const { login } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
 
-  const onCreate = () => {
-    login();
-    router.replace("/(tabs)");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onCreate = async () => {
+    if (!email || !password || !name) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await register({
+        id: Math.random().toString(36).substr(2, 9),
+        email,
+        password,
+        name
+      });
+
+      if (success) {
+        router.replace("/(tabs)");
+      } else {
+        alert("Registration failed. Email might be taken.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,6 +55,8 @@ export default function SignupScreen() {
           placeholder="Name"
           placeholderTextColor={Colors.placeholderText}
           style={styles.input}
+          value={name}
+          onChangeText={setName}
         />
         <TextInput
           placeholder="Email"
@@ -33,22 +64,28 @@ export default function SignupScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
         />
         <TextInput
           placeholder="Password"
           placeholderTextColor={Colors.placeholderText}
           secureTextEntry
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
 
-        <Pressable onPress={onCreate} style={styles.shadowWrapper}>
+        <Pressable onPress={onCreate} style={styles.shadowWrapper} disabled={loading}>
           <LinearGradient
             colors={[Colors.tabIconSelected, "#8B5CF6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.buttonFilled}
+            style={[styles.buttonFilled, loading && { opacity: 0.7 }]}
           >
-            <Text style={styles.buttonTextFilled}>Sign Up</Text>
+            <Text style={styles.buttonTextFilled}>
+              {loading ? "Signing Up..." : "Sign Up"}
+            </Text>
           </LinearGradient>
         </Pressable>
 

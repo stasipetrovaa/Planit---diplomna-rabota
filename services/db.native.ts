@@ -1,23 +1,15 @@
 import * as SQLite from "expo-sqlite";
-import { EventType } from "@/types/types";
+import { EventType, UserType } from "@/types/types";
 import { Platform } from "react-native";
 
 const dbName = "planit.db";
 
 // Helper to open the database
 const getDB = async () => {
-    if (Platform.OS === "web") {
-        return {
-            execAsync: async () => { },
-            getAllAsync: async () => [],
-            runAsync: async () => { },
-        };
-    }
     return await SQLite.openDatabaseAsync(dbName);
 };
 
 export const initDatabase = async () => {
-    if (Platform.OS === "web") return;
     try {
         const db = await getDB();
         await db.execAsync(`
@@ -34,6 +26,12 @@ export const initDatabase = async () => {
         color TEXT,
         completed INTEGER DEFAULT 0
       );
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT
+      );
     `);
         console.log("Database initialized successfully");
     } catch (error) {
@@ -42,7 +40,6 @@ export const initDatabase = async () => {
 };
 
 export const getEvents = async (): Promise<EventType[]> => {
-    if (Platform.OS === "web") return [];
     try {
         const db = await getDB();
         const allRows = await db.getAllAsync("SELECT * FROM events");
@@ -67,7 +64,6 @@ export const getEvents = async (): Promise<EventType[]> => {
 };
 
 export const addEvent = async (event: EventType) => {
-    if (Platform.OS === "web") return;
     try {
         const db = await getDB();
         await db.runAsync(
@@ -93,7 +89,6 @@ export const addEvent = async (event: EventType) => {
 };
 
 export const updateEvent = async (event: EventType) => {
-    if (Platform.OS === "web") return;
     try {
         const db = await getDB();
         await db.runAsync(
@@ -128,12 +123,43 @@ export const updateEvent = async (event: EventType) => {
 };
 
 export const deleteEvent = async (id: string) => {
-    if (Platform.OS === "web") return;
     try {
         const db = await getDB();
         await db.runAsync("DELETE FROM events WHERE id = ?", [id]);
     } catch (error) {
         console.error("Error deleting event:", error);
         throw error;
+    }
+};
+
+// Auth Methods
+export const registerUser = async (user: UserType) => {
+    try {
+        const db = await getDB();
+        await db.runAsync(
+            "INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)",
+            [user.id, user.email, user.password, user.name]
+        );
+        return user;
+    } catch (error) {
+        console.error("Error registering user:", error);
+        throw error;
+    }
+};
+
+export const loginUser = async (email: string, password: string): Promise<UserType | null> => {
+    try {
+        const db = await getDB();
+        const result = await db.getAllAsync(
+            "SELECT * FROM users WHERE email = ? AND password = ?",
+            [email, password]
+        );
+        if (result.length > 0) {
+            return result[0] as UserType;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error logging in:", error);
+        return null;
     }
 };

@@ -50,6 +50,14 @@ export const ExpoCalendarProvider = ({
   });
   const todayToString = today.toISOString().split("T")[0];
 
+  // Placeholder for notification logic
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     // MockNotifications.checkNotifications(events);
+  //   }, 30000); 
+  //   return () => clearInterval(intervalId);
+  // }, [events]);
+
   useEffect(() => {
     if (Platform.OS === "web") {
       return;

@@ -4,14 +4,36 @@ import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const onContinue = () => {
-    login();
-    router.replace("/(tabs)");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onContinue = async () => {
+    if (!email || !password) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await login(email, password);
+      if (success) {
+        router.replace("/(tabs)");
+      } else {
+        alert("Invalid email or password");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,22 +50,28 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           style={styles.input}
+          value={email}
+          onChangeText={setEmail}
         />
         <TextInput
           placeholder="Password"
           placeholderTextColor={Colors.placeholderText}
           secureTextEntry
           style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
 
-        <Pressable onPress={onContinue} style={styles.shadowWrapper}>
+        <Pressable onPress={onContinue} style={styles.shadowWrapper} disabled={loading}>
           <LinearGradient
             colors={[Colors.tabIconSelected, "#8B5CF6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.buttonFilled}
+            style={[styles.buttonFilled, loading && { opacity: 0.7 }]}
           >
-            <Text style={styles.buttonTextFilled}>Log In</Text>
+            <Text style={styles.buttonTextFilled}>
+              {loading ? "Logging In..." : "Log In"}
+            </Text>
           </LinearGradient>
         </Pressable>
 

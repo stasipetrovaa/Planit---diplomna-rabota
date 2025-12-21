@@ -14,3 +14,10 @@ export type EventType = {
   location?: string;
   completed?: boolean;
 };
+
+export type UserType = {
+  id: string;
+  email: string;
+  password?: string;
+  name?: string;
+};
