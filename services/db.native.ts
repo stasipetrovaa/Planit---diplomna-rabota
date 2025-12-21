@@ -24,7 +24,8 @@ export const initDatabase = async () => {
         repeat TEXT,
         notes TEXT,
         color TEXT,
-        completed INTEGER DEFAULT 0
+        completed INTEGER DEFAULT 0,
+        userId TEXT
       );
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY NOT NULL,
@@ -39,10 +40,12 @@ export const initDatabase = async () => {
     }
 };
 
-export const getEvents = async (): Promise<EventType[]> => {
+export const getEvents = async (userId: string): Promise<EventType[]> => {
     try {
         const db = await getDB();
-        const allRows = await db.getAllAsync("SELECT * FROM events");
+        // Fallback for older rows without userId (assign them to first user or keep legacy behavior?
+        // Ideally should filter by userId.
+        const allRows = await db.getAllAsync("SELECT * FROM events WHERE userId = ?", [userId]);
 
         return allRows.map((row: any) => ({
             id: row.id,
@@ -56,6 +59,7 @@ export const getEvents = async (): Promise<EventType[]> => {
             color: row.color,
             completed: !!row.completed,
             alarms: [],
+            userId: row.userId
         }));
     } catch (error) {
         console.error("Error fetching events:", error);
@@ -67,8 +71,8 @@ export const addEvent = async (event: EventType) => {
     try {
         const db = await getDB();
         await db.runAsync(
-            `INSERT INTO events (id, title, startDate, endDate, startTime, endTime, repeat, notes, color, completed) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO events (id, title, startDate, endDate, startTime, endTime, repeat, notes, color, completed, userId) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 event.id || Math.random().toString(36).substr(2, 9),
                 event.title,
@@ -80,6 +84,7 @@ export const addEvent = async (event: EventType) => {
                 event.notes || "",
                 event.color || "",
                 event.completed ? 1 : 0,
+                event.userId || null
             ]
         );
     } catch (error) {

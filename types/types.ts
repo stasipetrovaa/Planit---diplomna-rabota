@@ -13,6 +13,7 @@ export type EventType = {
   alarms?: any[];
   location?: string;
   completed?: boolean;
+  userId?: string;
 };
 
 export type UserType = {

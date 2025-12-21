@@ -29,20 +29,22 @@ export const initDatabase = async () => {
     console.log("Web Database (Persistent) initialized");
 };
 
-export const getEvents = async (): Promise<EventType[]> => {
+export const getEvents = async (userId: string): Promise<EventType[]> => {
     const events = await loadData<EventType>(EVENTS_KEY);
-    // Convert date strings back to Date objects
-    return events.map(e => ({
-        ...e,
-        startDate: new Date(e.startDate),
-        endDate: new Date(e.endDate),
-        startTime: new Date(e.startTime),
-        endTime: new Date(e.endTime),
-    }));
+    // Convert date strings back to Date objects AND filter by userId
+    return events
+        .filter(e => e.userId === userId)
+        .map(e => ({
+            ...e,
+            startDate: new Date(e.startDate),
+            endDate: new Date(e.endDate),
+            startTime: new Date(e.startTime),
+            endTime: new Date(e.endTime),
+        }));
 };
 
 export const addEvent = async (event: EventType) => {
-    const events = await getEvents();
+    const events = await loadData<EventType>(EVENTS_KEY); // load raw
     events.push(event);
     await saveData(EVENTS_KEY, events);
 };
