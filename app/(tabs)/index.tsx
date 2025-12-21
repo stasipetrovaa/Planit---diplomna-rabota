@@ -1,6 +1,7 @@
 import AgendaItem from "@/components/ui/AgendaItem";
 import HorizontalDaySelector from "@/components/ui/HorizontalDaySelector";
 import CalendarModal from "@/components/CalendarModal";
+import EmptyStateTimeline from "@/components/EmptyStateTimeline";
 import { Colors } from "@/constants/Colors";
 import { useCalendar } from "@/contexts/calendar-context";
 import { useHeader } from "@/contexts/header-context";
@@ -84,17 +85,13 @@ export default function HomeScreen() {
         onDateSelect={handleDaySelect}
       />
 
-
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {dayEvents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No events for this day</Text>
-          </View>
+          <EmptyStateTimeline />
         ) : (
           timelineData.hours.map((hour) => {
             const hourEvents = timelineData.eventsByHour[hour];

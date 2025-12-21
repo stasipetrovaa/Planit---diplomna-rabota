@@ -16,7 +16,10 @@
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["READ_CALENDAR", "WRITE_CALENDAR"],
+      "permissions": [
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ],
       "edgeToEdgeEnabled": true,
       "package": "com.tonkiss.planit"
     },
@@ -36,12 +39,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      [ 
+      [
         "expo-calendar",
         {
           "calendarPermission": "The app needs to access your calendar."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

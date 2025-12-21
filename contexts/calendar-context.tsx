@@ -21,7 +21,7 @@ type CalendarContextType = {
 
 const CalendarContext = createContext<CalendarContextType>({
   today: new Date(),
-  setToday: () => {},
+  setToday: () => { },
   calendar: null,
   monthDayString: "",
   todayToString: "",
@@ -228,8 +228,8 @@ export const ExpoCalendarProvider = ({
         recurrenceRule:
           event.repeat && event.repeat !== "none"
             ? ({
-                frequency: event.repeat,
-              } as RecurrenceRule)
+              frequency: event.repeat,
+            } as RecurrenceRule)
             : undefined,
         alarms: event.alarms || [],
       });
