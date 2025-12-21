@@ -4,6 +4,7 @@ import { RecurrenceRule } from "expo-calendar";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { CalendarProvider } from "react-native-calendars";
+import { NotificationService } from "@/services/notifications";
 
 type CalendarContextType = {
   today: Date;
@@ -59,6 +60,9 @@ export const ExpoCalendarProvider = ({
   // }, [events]);
 
   useEffect(() => {
+    // 1. Initialize Notification Agent
+    NotificationService.registerForPushNotificationsAsync();
+
     if (Platform.OS === "web") {
       return;
     }
@@ -240,6 +244,14 @@ export const ExpoCalendarProvider = ({
             } as RecurrenceRule)
             : undefined,
         alarms: event.alarms || [],
+      });
+
+      // INTELLIGENT AGENT: Schedule a local reminder
+      await NotificationService.scheduleReminder({
+        ...event,
+        id: eventId, // Use the real ID
+        startDate: startDateTime,
+        startTime: startDateTime,
       });
 
       await getEvents();
