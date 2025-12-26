@@ -9,6 +9,9 @@ Notifications.setNotificationHandler({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
+        priority: Notifications.AndroidNotificationPriority.MAX,
+        shouldShowBanner: true,
+        shouldShowList: true,
     }),
 });
 
@@ -60,7 +63,10 @@ export const NotificationService = {
                     data: { eventId: event.id },
                     sound: "default",
                 },
-                trigger: triggerDate,
+                trigger: {
+                    type: Notifications.SchedulableTriggerInputTypes.DATE,
+                    date: triggerDate
+                },
             });
             console.log(`Scheduled notification for ${event.title} at ${triggerDate.toLocaleTimeString()}`);
             return id;
