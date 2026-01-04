@@ -2,7 +2,7 @@ import { Colors } from "@/constants/Colors";
 import { EventType } from "@/types/types";
 import { Feather } from "@expo/vector-icons";
 import { memo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface ItemProps {
   item: EventType;
@@ -84,14 +84,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginVertical: 4,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.08)",
+      },
+    }),
     alignItems: "center",
   },
   itemCompleted: {

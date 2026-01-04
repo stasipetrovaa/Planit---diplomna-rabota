@@ -28,7 +28,7 @@ export default function ExploreScreen() {
   // Filter events by search query
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return events;
+    if (!q) return [];
     return events.filter((e) => e.title.toLowerCase().includes(q));
   }, [events, query]);
 

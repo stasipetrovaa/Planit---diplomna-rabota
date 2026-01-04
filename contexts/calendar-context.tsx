@@ -6,6 +6,7 @@ import { Platform } from "react-native";
 import { CalendarProvider } from "react-native-calendars";
 import { NotificationService } from "@/services/notifications";
 import * as DB from "@/services/db";
+import { generateSmartReminders } from "@/services/ai";
 import { useAuth } from "./auth-context";
 
 type CalendarContextType = {
@@ -47,22 +48,14 @@ export const ExpoCalendarProvider = ({
   const [calendar, setCalendar] = useState<ExpoCalendar.Calendar | null>(null);
   const [events, setEvents] = useState<EventType[]>([]);
   const webEventsRef = useRef<EventType[]>([]);
+
   const monthDayString = today.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
   });
   const todayToString = today.toISOString().split("T")[0];
 
-  // Placeholder for notification logic
-  // useEffect(() => {
-  //   const intervalId = setInterval(() => {
-  //     // MockNotifications.checkNotifications(events);
-  //   }, 30000); 
-  //   return () => clearInterval(intervalId);
-  // }, [events]);
-
-
-  const { user } = useAuth(); // Get authenticated user
+  const { user } = useAuth();
 
   useEffect(() => {
     NotificationService.registerForPushNotificationsAsync();
@@ -71,6 +64,7 @@ export const ExpoCalendarProvider = ({
       if (user?.id) getEvents();
       return;
     }
+
     (async () => {
       try {
         const { status } = await ExpoCalendar.requestCalendarPermissionsAsync();
@@ -121,51 +115,26 @@ export const ExpoCalendarProvider = ({
     if (!calendar?.id) return [];
 
     try {
-
-      // Let's stick to the current implementation which seems to be utilizing ExpoCalendar for Native.
-      // To isolate users on Native (System Calendar), we usually tag events.
-      // However, db.native.ts HAS `getEvents` and `addEvent` which use SQLite.
-      // AND db.web.ts uses AsyncStorage.
-
-      // CRITICAL: `CalendarContext` lines 98-133 use `ExpoCalendar` for Native, but `webEventsRef` for Web.
-      // This means Native uses System Calendar, Web uses custom DB.
-      // System Calendar is SHARED on the device.
-      // User request: "when I login from 2 different profiles, I see same data".
-      // Solution: We need to filter ExpoCalendar events by some metadata linked to the user.
-
-      // STRATEGY update: 
-      // 1. Web is already using `db.web.ts` which I updated to filter by `userId`. 
-      //    So Web isolation is essentially FIXED by my previous `db.web.ts` change, IF I call it here.
-      //    CURRENTLY: Line 99 `setEvents([...webEventsRef.current])` - this is just in-memory.
-      //    I need to change Web logic here to call `DB.getEvents(user.id)`.
-
-      // 2. Native uses `ExpoCalendar`. To isolate, we can verify if `event.notes` contains `[user:ID]`.
-      //    Or better: Filter the results from `ExpoCalendar.getEventsAsync` based on `notes` containing the user ID.
-
       const calEvents = await ExpoCalendar.getEventsAsync(
         [calendar.id],
         startDate || new Date(2000, 0, 1),
         endDate || new Date(2100, 11, 31)
       );
 
-      const mappedEvents =
-        calEvents
-          .map((event) => {
-            // ... mapping logic
-            const { color, cleanedNotes } = extractColorAndNotes(event.notes);
-            // check ownership
-            if (!event.notes?.includes(`[uid:${user.id}]`)) {
-              // Only filter if we enact strict ownership. 
-              // For now, let's just create events WITH the tag.
-            }
-            // ...
-          })
-
-      // REVISION: The User wants isolation. 
-      // If I modify `addEvent` to append `[uid:USER_ID]` to notes, 
-      // then in `getEvents`, I filter by that tag.
-
-      return []; // Placeholder for the actual replacement block below
+      return calEvents.map((event) => {
+        const { color, cleanedNotes } = extractMetadata(event.notes);
+        return {
+          id: event.id,
+          title: event.title,
+          startDate: new Date(event.startDate),
+          endDate: new Date(event.endDate),
+          startTime: new Date(event.startDate),
+          endTime: new Date(event.endDate),
+          color: color,
+          notes: cleanedNotes,
+          completed: false,
+        };
+      });
     } catch (err) {
       return [];
     }
@@ -179,7 +148,6 @@ export const ExpoCalendarProvider = ({
 
   async function createCalendar() {
     try {
-      // Check if our calendar already exists
       const calendars = await ExpoCalendar.getCalendarsAsync(
         ExpoCalendar.EntityTypes.EVENT
       );
@@ -192,12 +160,10 @@ export const ExpoCalendarProvider = ({
         return;
       }
 
-      // Determine a valid source for the new calendar
       let defaultCalendarSource: any = null;
       if (Platform.OS === "ios") {
         defaultCalendarSource = await getDefaultCalendarSource();
       } else {
-        // On Android, we must provide a local account source
         defaultCalendarSource = { isLocalAccount: true, name: "PlanIt" };
       }
 
@@ -212,7 +178,6 @@ export const ExpoCalendarProvider = ({
         accessLevel: ExpoCalendar.CalendarAccessLevel.OWNER,
       });
 
-      // Refetch calendars and set the created one
       const refreshed = await ExpoCalendar.getCalendarsAsync(
         ExpoCalendar.EntityTypes.EVENT
       );
@@ -220,7 +185,6 @@ export const ExpoCalendarProvider = ({
       setCalendar(createdCalendar || refreshed[0] || null);
     } catch (error) {
       console.error("Error creating calendar:", error);
-      // Fallback to default calendar if creation fails
       const calendars = await ExpoCalendar.getCalendarsAsync(
         ExpoCalendar.EntityTypes.EVENT
       );
@@ -241,6 +205,8 @@ export const ExpoCalendarProvider = ({
     endDateTime.setSeconds(0);
     endDateTime.setMilliseconds(0);
 
+    let eventId = "";
+
     if (Platform.OS === "web") {
       if (!user?.id) return "";
       const newEvent: EventType = {
@@ -255,50 +221,89 @@ export const ExpoCalendarProvider = ({
       // For web, use DB directly
       await DB.addEvent(newEvent);
       await getEvents();
-      return newEvent.id!;
+      eventId = newEvent.id!;
+    } else {
+      if (!calendar?.id || !user?.id) {
+        console.error("No calendar available or user not logged in");
+        return "";
+      }
+
+      try {
+        const baseNotes = event.notes || "";
+        const metadata = `[uid:${user.id}]` + (event.color ? `[color:${event.color}]` : "");
+        const notesToSave = `${baseNotes}${baseNotes ? "\n" : ""}${metadata}`;
+
+        const createdId = await ExpoCalendar.createEventAsync(calendar.id, {
+          title: event.title,
+          startDate: startDateTime,
+          endDate: endDateTime,
+          notes: notesToSave,
+          recurrenceRule:
+            event.repeat && event.repeat !== "none"
+              ? ({
+                frequency: event.repeat === "daily" ? ExpoCalendar.Frequency.DAILY :
+                  event.repeat === "weekly" ? ExpoCalendar.Frequency.WEEKLY :
+                    event.repeat === "monthly" ? ExpoCalendar.Frequency.MONTHLY :
+                      event.repeat === "yearly" ? ExpoCalendar.Frequency.YEARLY :
+                        ExpoCalendar.Frequency.DAILY,
+              } as RecurrenceRule)
+              : undefined,
+          alarms: event.alarms || [],
+        });
+        eventId = createdId;
+      } catch (error) {
+        console.error("Error creating event:", error);
+        return "";
+      }
     }
 
-    if (!calendar?.id || !user?.id) {
-      console.error("No calendar available or user not logged in");
-      return "";
-    }
-
-    try {
-      const baseNotes = event.notes || "";
-      // Construct metadata tag
-      let metadata = `[uid:${user.id}]`;
-      if (event.color) metadata += `[color:${event.color}]`;
-
-      const notesToSave = `${baseNotes}${baseNotes ? "\n" : ""}${metadata}`;
-
-      const eventId = await ExpoCalendar.createEventAsync(calendar.id, {
-        title: event.title,
-        startDate: startDateTime,
-        endDate: endDateTime,
-        notes: notesToSave,
-        recurrenceRule:
-          event.repeat && event.repeat !== "none"
-            ? ({
-              frequency: event.repeat,
-            } as RecurrenceRule)
-            : undefined,
-        alarms: event.alarms || [],
-      });
-
-      // INTELLIGENT AGENT: Schedule a local reminder
+    // SHARED: Intelligent Agent Logic (Runs for both Web & Native)
+    if (eventId) {
+      // 1. Schedule local standard reminder (15 mins before)
       await NotificationService.scheduleReminder({
         ...event,
-        id: eventId, // Use the real ID
+        id: eventId,
         startDate: startDateTime,
         startTime: startDateTime,
       });
 
-      await getEvents();
-      return eventId;
-    } catch (error) {
-      console.error("Error creating event:", error);
-      return "";
+      // 2. Automatic AI Reminders in background
+      generateSmartReminders({ ...event, id: eventId }).then(async (aiReminders) => {
+        if (aiReminders && aiReminders.length > 0) {
+          console.log("AI generated reminders:", aiReminders);
+          const updatedEvent = {
+            ...event,
+            id: eventId,
+            startDate: startDateTime,
+            startTime: startDateTime,
+            endDate: endDateTime,
+            endTime: endDateTime,
+            alarms: aiReminders,
+            notes: (event.notes || "") + `\n✨ AI added ${aiReminders.length} reminders`
+          };
+
+          // Persist the AI updates (notes and alarms)
+          await updateEvent(updatedEvent);
+
+          // Schedule the new AI alarms
+          aiReminders.forEach(async (alarm: any) => {
+            const alarmDate = new Date(startDateTime.getTime() + (alarm.relativeOffset * 60 * 1000));
+
+            await NotificationService.scheduleCustomReminder(
+              updatedEvent,
+              alarmDate,
+              `AI Suggestion: ${updatedEvent.title}`
+            );
+          });
+        }
+      });
     }
+
+    if (Platform.OS !== "web") {
+      await getEvents();
+    }
+
+    return eventId;
   }
 
   async function updateEvent(event: EventType): Promise<boolean> {
@@ -324,10 +329,12 @@ export const ExpoCalendarProvider = ({
         startTime: startDateTime,
         endTime: endDateTime,
       };
-      webEventsRef.current = webEventsRef.current.map((e) =>
+
+      const newWebEvents = webEventsRef.current.map((e) =>
         e.id === event.id ? updatedEvent : e
       );
-      setEvents([...webEventsRef.current]);
+      webEventsRef.current = newWebEvents;
+      setEvents(newWebEvents);
       return true;
     }
 
@@ -349,7 +356,13 @@ export const ExpoCalendarProvider = ({
         notes: notesToSave,
         recurrenceRule:
           event.repeat && event.repeat !== "none"
-            ? ({ frequency: event.repeat } as RecurrenceRule)
+            ? ({
+              frequency: event.repeat === "daily" ? ExpoCalendar.Frequency.DAILY :
+                event.repeat === "weekly" ? ExpoCalendar.Frequency.WEEKLY :
+                  event.repeat === "monthly" ? ExpoCalendar.Frequency.MONTHLY :
+                    event.repeat === "yearly" ? ExpoCalendar.Frequency.YEARLY :
+                      ExpoCalendar.Frequency.DAILY,
+            } as RecurrenceRule)
             : undefined,
         alarms: event.alarms || [],
       });

@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useState } from "react";
 
 export default function LoginScreen() {
@@ -123,15 +123,21 @@ const styles = StyleSheet.create({
   },
   shadowWrapper: {
     width: "100%", // Full width button
-    shadowColor: Colors.tabIconSelected,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
     marginTop: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.tabIconSelected,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: `0px 4px 8px ${Colors.tabIconSelected}4D`,
+      },
+    }),
   },
   buttonFilled: {
     borderRadius: 16,

@@ -28,7 +28,7 @@ export const useEventModal = () => useContext(EventModalContext);
 export default function TabLayout() {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
-  const { addEvent, updateEvent, deleteEvent, getEvents, today } = useCalendar();
+  const { addEvent, updateEvent, deleteEvent, getEvents, today, setToday } = useCalendar();
 
   const createEvent = async (event: EventType) => {
     try {
@@ -98,6 +98,11 @@ export default function TabLayout() {
                   height={32}
                 />
               ),
+            }}
+            listeners={{
+              tabPress: () => {
+                setToday(new Date());
+              },
             }}
           />
 

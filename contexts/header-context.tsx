@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useCalendar } from "./calendar-context";
 
 type ViewMode = "today" | "calendar";
@@ -16,30 +16,46 @@ type HeaderContextType = {
 
 const HeaderContext = createContext<HeaderContextType>({
   title: "",
-  setTitle: () => {},
+  setTitle: () => { },
   subtitle: "",
-  setSubtitle: () => {},
+  setSubtitle: () => { },
   viewMode: "calendar",
-  setViewMode: () => {},
-  toggleViewMode: () => {},
-  reset: () => {},
+  setViewMode: () => { },
+  toggleViewMode: () => { },
+  reset: () => { },
 });
 
 export const useHeader = () => useContext(HeaderContext);
 
 export const HeaderProvider = ({ children }: { children: React.ReactNode }) => {
-  const { monthDayString } = useCalendar();
+  const { monthDayString, today } = useCalendar();
   const [title, setTitle] = useState("Today");
   const [subtitle, setSubtitle] = useState(monthDayString);
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+
+  useEffect(() => {
+    const now = new Date();
+    const isToday =
+      today.getDate() === now.getDate() &&
+      today.getMonth() === now.getMonth() &&
+      today.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      setTitle("Today");
+      setSubtitle(monthDayString);
+    } else {
+      setTitle(monthDayString);
+      setSubtitle("");
+    }
+  }, [today, monthDayString]);
 
   const toggleViewMode = () => {
     setViewMode((prev) => (prev === "today" ? "calendar" : "today"));
   };
 
   const reset = () => {
-    setTitle("Today");
-    setSubtitle(monthDayString);
+    setTitle(monthDayString);
+    setSubtitle("");
   };
 
   return (

@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import CustomSpinner from "./ui/DurationSpinner";
+import { generateSmartReminders } from "@/services/ai";
 
 const createEmptyEvent = (selectedDate?: Date): EventType => {
   const date = selectedDate || new Date();
@@ -75,7 +76,7 @@ const AddEventModal = ({
       if (editingEvent) {
         setEvent(editingEvent);
         setTime(editingEvent.startTime);
-        const diff = (editingEvent.endTime.getTime() - editingEvent.startTime.getTime()) / (1000 * 60 * 60);
+        const diff = (editingEvent.endTime.getTime() - editingEvent.startTime.getTime()) / (1000 * 60);
         setDuration(diff);
       } else {
         setEvent(createEmptyEvent(selectedDate));
@@ -127,8 +128,11 @@ const AddEventModal = ({
 
   const getDuration = () => {
     const diff =
-      (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60 * 60);
-    return diff;
+      (event.endTime.getTime() - event.startTime.getTime()) / (1000 * 60);
+    if (diff < 60) return `${diff}m`;
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
   };
 
   const renderDate = () => {
@@ -165,7 +169,7 @@ const AddEventModal = ({
     setShowTimePicker(Platform.OS === "ios");
     if (selectedTime) {
       setTime(selectedTime);
-      const newEndTime = new Date(selectedTime.getTime() + (duration || 1) * 60 * 60 * 1000);
+      const newEndTime = new Date(selectedTime.getTime() + (duration || 60) * 60 * 1000);
       setEvent({
         ...event,
         startTime: selectedTime,
@@ -186,7 +190,7 @@ const AddEventModal = ({
     setDuration(value);
     setEvent({
       ...event,
-      endTime: new Date(event.startTime.getTime() + value * 60 * 60 * 1000),
+      endTime: new Date(event.startTime.getTime() + value * 60 * 1000),
     });
     setShowDurationPicker(false);
   };
@@ -227,9 +231,10 @@ const AddEventModal = ({
         {showDurationPicker && (
           <CustomSpinner
             type="duration"
-            initial={duration || 1}
-            min={1}
-            max={23}
+            initial={duration || 60}
+            min={5}
+            max={1440}
+            step={5}
             onConfirm={(value) => onConfirm(value as number)}
             onCancel={() => {
               setShowDurationPicker(false);
@@ -279,7 +284,7 @@ const AddEventModal = ({
               onPress={() => setShowTimePicker(true)}
             >
               <Text style={styles.placeholder}>
-                {`Time: ${formatTime(event.startTime)} - ${formatTime(event.endTime)} | ${getDuration()}h`}
+                {`Time: ${formatTime(event.startTime)} - ${formatTime(event.endTime)} | ${getDuration()}`}
               </Text>
               <Feather name="clock" size={16} color={Colors.text} />
             </Pressable>
@@ -321,11 +326,20 @@ const AddEventModal = ({
                     marginLeft: 4,
                     borderWidth: 1.5,
                     borderColor: "white",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 2,
-                    elevation: 2,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                      },
+                      android: {
+                        elevation: 2,
+                      },
+                      web: {
+                        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+                      },
+                    }),
                   }}
                 />
               )}
@@ -439,7 +453,7 @@ const AddEventModal = ({
                 <Pressable
                   onPress={() => {
                     if (time) {
-                      const newEndTime = new Date(time.getTime() + (duration || 1) * 60 * 60 * 1000);
+                      const newEndTime = new Date(time.getTime() + (duration || 60) * 60 * 1000);
                       setEvent({ ...event, startTime: time, endTime: newEndTime });
                     }
                     setShowTimePicker(false);
@@ -502,14 +516,20 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: "0px -4px 12px rgba(0, 0, 0, 0.1)",
+      },
+    }),
   },
   input: {
     width: "100%",
@@ -600,14 +620,20 @@ const styles = StyleSheet.create({
   },
   submitButtonContainer: {
     flex: 1,
-    shadowColor: Colors.tabIconSelected,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.tabIconSelected,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: `0px 4px 8px ${Colors.tabIconSelected}4D`,
+      },
+    }),
   },
   dragHandle: {
     width: 48,
@@ -634,10 +660,20 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     minWidth: 320,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.2)",
+      },
+    }),
   },
   webPickerTitle: {
     fontSize: 20,

@@ -20,16 +20,17 @@ const CustomSpinner = ({
   initial,
   min,
   max,
+  step = 1,
   onConfirm,
   onCancel,
-}: CustomSpinnerProps) => {
+}: CustomSpinnerProps & { step?: number }) => {
   const [value, setValue] = useState(initial);
 
   const handleChange = (delta: number) => {
     if (type === "duration") {
       const newValue = Math.min(
         max!,
-        Math.max(min!, (value as number) + delta)
+        Math.max(min!, (value as number) + (delta * step))
       );
       setValue(newValue);
     } else if (type === "repeat") {
@@ -42,7 +43,11 @@ const CustomSpinner = ({
 
   const renderValue = () => {
     if (type === "duration") {
-      return `${value}h`;
+      const mins = value as number;
+      if (mins < 60) return `${mins}m`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m === 0 ? `${h}h` : `${h}h ${m}m`;
     }
     const str = value as Repeat;
     return capitalize(str);

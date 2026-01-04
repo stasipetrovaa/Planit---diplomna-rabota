@@ -4,7 +4,7 @@ import { useHeader } from "@/contexts/header-context";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function Header() {
   const { title, subtitle, toggleViewMode } = useHeader();
@@ -130,14 +130,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     minWidth: 220,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.15)",
+      },
+    }),
     zIndex: 999,
   },
   profileSection: {

@@ -75,6 +75,31 @@ export const NotificationService = {
         }
     },
 
+    // 2.5 Schedule Custom Reminder (AI or Manual)
+    scheduleCustomReminder: async (event: EventType, triggerDate: Date, message: string) => {
+        // Don't schedule if time has passed
+        if (triggerDate.getTime() < Date.now()) return;
+
+        try {
+            const id = await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: "PlanIt AI ⚡",
+                    body: message,
+                    data: { eventId: event.id },
+                    sound: "default",
+                },
+                trigger: {
+                    type: Notifications.SchedulableTriggerInputTypes.DATE,
+                    date: triggerDate
+                },
+            });
+            console.log(`Scheduled custom notification at ${triggerDate.toLocaleTimeString()}`);
+            return id;
+        } catch (e) {
+            console.error("Error scheduling custom notification:", e);
+        }
+    },
+
     // 3. Cancel Reminder
     cancelReminder: async (notificationId: string) => {
         await Notifications.cancelScheduledNotificationAsync(notificationId);

@@ -53,6 +53,7 @@ export default function AnimatedSplashScreen({
         <Image
           source={require("@/assets/images/logo.png")}
           style={[styles.appLogo]}
+          resizeMode="contain"
         />
         <Text style={[styles.subtitle]}>Your Day, Perfectly Planned</Text>
       </Animated.View>
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "50%",
     aspectRatio: 1,
-    resizeMode: "contain",
+
   },
   subtitle: {
     marginTop: -80,
