@@ -1,7 +1,7 @@
 import { EventType } from "@/types/types";
 
-// API key
-const GEMINI_API_KEY = "AIzaSyDS1iwAeqmEe2voSHWi5wBwnOsujpoieYY";
+// API key (Move this to .env file as EXPO_PUBLIC_GEMINI_API_KEY)
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
 
 export const generateSmartReminders = async (event: EventType): Promise<any[]> => {
 
