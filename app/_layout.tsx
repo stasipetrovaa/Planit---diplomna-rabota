@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { useRouter, useSegments } from "expo-router";
 import { HeaderProvider } from "@/contexts/header-context";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NotificationService } from "@/services/notifications";
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
@@ -52,6 +53,10 @@ function AppContent() {
     }
     if (isAuthenticated && inAuth) {
       router.replace("/(tabs)");
+    }
+
+    if (isAuthenticated) {
+      NotificationService.registerForPushNotificationsAsync();
     }
   }, [isAuthenticated, segments]);
 

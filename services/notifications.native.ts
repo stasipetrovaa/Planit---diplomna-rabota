@@ -45,21 +45,30 @@ export const NotificationService = {
 
     // 2. Schedule a Reminder (Rule-based Agent Logic)
     scheduleReminder: async (event: EventType) => {
-        const triggerDate = new Date(event.startDate);
-        triggerDate.setHours(event.startTime.getHours());
-        triggerDate.setMinutes(event.startTime.getMinutes());
+        const start = new Date(event.startDate);
+        start.setHours(event.startTime.getHours(), event.startTime.getMinutes(), 0, 0);
 
-        // Subtract 15 minutes
-        triggerDate.setMinutes(triggerDate.getMinutes() - 15);
+        const now = Date.now();
+        let triggerDate = new Date(start.getTime() - (15 * 60 * 1000));
+        let body = `"${event.title}" starts in 15 minutes!`;
 
-        // Don't schedule if time has passed
-        if (triggerDate.getTime() < Date.now()) return;
+        // Adaptive Logic:
+        if (triggerDate.getTime() <= now) {
+            // Remind at start
+            triggerDate = start;
+            body = `"${event.title}" is starting now! 🔔`;
+        }
+
+        // If even start time is past, set to 5 seconds from now for immediate alert
+        if (triggerDate.getTime() <= now) {
+            triggerDate = new Date(now + 5000);
+        }
 
         try {
             const id = await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: "Upcoming Task 🔔",
-                    body: `"${event.title}" starts in 15 minutes!`,
+                    title: "PlanIt Reminder 🔔",
+                    body: body,
                     data: { eventId: event.id },
                     sound: "default",
                 },
@@ -68,7 +77,7 @@ export const NotificationService = {
                     date: triggerDate
                 },
             });
-            console.log(`Scheduled notification for ${event.title} at ${triggerDate.toLocaleTimeString()}`);
+            console.log(`Scheduled adaptive notification for ${event.title} at ${triggerDate.toLocaleTimeString()}`);
             return id;
         } catch (e) {
             console.error("Error scheduling notification:", e);
@@ -77,8 +86,13 @@ export const NotificationService = {
 
     // 2.5 Schedule Custom Reminder (AI or Manual)
     scheduleCustomReminder: async (event: EventType, triggerDate: Date, message: string) => {
-        // Don't schedule if time has passed
-        if (triggerDate.getTime() < Date.now()) return;
+        const now = Date.now();
+        let finalTrigger = triggerDate;
+
+        // If time has passed, fire in 5 seconds as a "just missed/suggestion" alert
+        if (triggerDate.getTime() <= now) {
+            finalTrigger = new Date(now + 5000);
+        }
 
         try {
             const id = await Notifications.scheduleNotificationAsync({

@@ -4,52 +4,58 @@ export const NotificationService = {
     registerForPushNotificationsAsync: async () => {
         if (typeof window !== "undefined" && "Notification" in window) {
             if (Notification.permission !== "granted") {
-                const permission = await Notification.requestPermission();
-                if (permission !== "granted") {
-                    console.log("Web: Notification permission denied");
-                }
+                await Notification.requestPermission();
             }
         }
     },
 
     scheduleReminder: async (event: EventType) => {
-        // Basic reminder execution
-        const triggerDate = new Date(event.startDate);
-        triggerDate.setHours(event.startTime.getHours());
-        triggerDate.setMinutes(event.startTime.getMinutes());
-        triggerDate.setMinutes(triggerDate.getMinutes() - 15); // Default 15 min rule
+        const start = new Date(event.startDate);
+        start.setHours(event.startTime.getHours(), event.startTime.getMinutes(), 0, 0);
 
         const now = Date.now();
-        const delay = triggerDate.getTime() - now;
+        let triggerTime = start.getTime() - (15 * 60 * 1000); // Default: 15 mins before
+        let body = `"${event.title}" starts in 15 minutes!`;
 
-        if (delay > 0) {
-            console.log(`Web: Scheduling standard reminder in ${delay / 1000}s`);
-            setTimeout(() => {
-                new Notification("Upcoming Task 🔔", {
-                    body: `"${event.title}" starts in 15 minutes!`,
-                });
-            }, delay);
+        // Adaptive Logic:
+        if (triggerTime <= now) {
+            // If 15 mins before is already past, try to remind at the start
+            triggerTime = start.getTime();
+            body = `"${event.title}" is starting now! 🔔`;
         }
+
+        const delay = triggerTime - now;
+
+        // If even the start time is past or very close, fire almost immediately
+        const finalDelay = delay > 0 ? delay : 5000; // 5 second fallback
+
+        console.log(`Web: Scheduling reminder for "${event.title}" at ${new Date(triggerTime).toLocaleTimeString()} (in ${finalDelay / 1000}s)`);
+
+        setTimeout(() => {
+            console.log(`Web: Triggering notification for "${event.title}"`);
+            if (Notification.permission === "granted") {
+                new Notification("PlanIt Reminder 🔔", { body });
+            }
+        }, finalDelay);
     },
 
     scheduleCustomReminder: async (event: EventType, triggerDate: Date, message: string) => {
         const now = Date.now();
         const delay = triggerDate.getTime() - now;
 
-        if (delay > 0) {
-            console.log(`Web: Scheduling custom AI reminder in ${delay / 1000}s`);
-            setTimeout(() => {
-                if (Notification.permission === "granted") {
-                    new Notification("PlanIt AI ⚡", {
-                        body: message,
-                    });
-                } else {
-                    alert(`PlanIt Reminder:\n${message}`);
-                }
-            }, delay);
-        } else {
-            console.warn("Web: Trigger date is in the past", triggerDate);
-        }
+        // Adaptive: If time passed or very close, fire in 5s
+        const finalDelay = delay > 0 ? delay : 5000;
+
+        console.log(`Web: Scheduling custom AI reminder in ${finalDelay / 1000}s`);
+
+        setTimeout(() => {
+            console.log(`Web: Triggering AI notification for "${event.title}"`);
+            if (Notification.permission === "granted") {
+                new Notification("PlanIt AI ⚡", {
+                    body: message,
+                });
+            }
+        }, finalDelay);
     },
 
     cancelReminder: async (id: string) => {
