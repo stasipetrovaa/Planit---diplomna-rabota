@@ -129,7 +129,7 @@ export default function HomeScreen() {
         selectedDate={today}
         onDateSelect={handleDaySelect}
       />
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
