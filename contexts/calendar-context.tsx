@@ -133,6 +133,7 @@ export const ExpoCalendarProvider = ({
           color: color,
           notes: cleanedNotes,
           completed: false,
+          repeat: "none",
         };
       });
     } catch (err) {
@@ -330,6 +331,8 @@ export const ExpoCalendarProvider = ({
         endTime: endDateTime,
       };
 
+      await DB.updateEvent(updatedEvent);
+
       const newWebEvents = webEventsRef.current.map((e) =>
         e.id === event.id ? updatedEvent : e
       );
@@ -377,6 +380,7 @@ export const ExpoCalendarProvider = ({
 
   async function deleteEvent(eventId: string): Promise<boolean> {
     if (Platform.OS === "web") {
+      await DB.deleteEvent(eventId);
       webEventsRef.current = webEventsRef.current.filter((e) => e.id !== eventId);
       setEvents([...webEventsRef.current]);
       return true;

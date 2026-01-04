@@ -50,7 +50,7 @@ export const addEvent = async (event: EventType) => {
 };
 
 export const updateEvent = async (event: EventType) => {
-    const events = await getEvents();
+    const events = await loadData<EventType>(EVENTS_KEY);
     const index = events.findIndex((e) => e.id === event.id);
     if (index !== -1) {
         events[index] = event;
@@ -59,9 +59,9 @@ export const updateEvent = async (event: EventType) => {
 };
 
 export const deleteEvent = async (id: string) => {
-    let events = await getEvents();
-    events = events.filter((e) => e.id !== id);
-    await saveData(EVENTS_KEY, events);
+    const events = await loadData<EventType>(EVENTS_KEY);
+    const filteredEvents = events.filter((e) => e.id !== id);
+    await saveData(EVENTS_KEY, filteredEvents);
 };
 
 // Auth Methods

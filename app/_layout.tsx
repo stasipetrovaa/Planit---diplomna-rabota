@@ -12,9 +12,14 @@ import { useRouter, useSegments } from "expo-router";
 import { HeaderProvider } from "@/contexts/header-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NotificationService } from "@/services/notifications";
+import * as DB from "@/services/db";
 
 export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    DB.initDatabase().catch(err => console.error("Database init error:", err));
+  }, []);
 
   const [loaded] = useFonts({
     Glockenspiel: require("../assets/fonts/LT-Glockenspiel-Black.ttf"),
