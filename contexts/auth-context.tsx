@@ -6,25 +6,31 @@ import {
   useMemo,
   useState,
 } from "react";
+import * as DB from "@/services/db";
+import { UserType } from "@/types/types";
 
 type AuthContextType = {
+  user: UserType | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (user: UserType) => Promise<boolean>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
+  user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: () => { },
+  login: async () => false,
+  register: async () => false,
   logout: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,43 +39,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkLoginStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
-      if (token) {
-        setIsAuthenticated(true);
+      const storedUser = await AsyncStorage.getItem("user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
     } catch (e) {
-      console.error("Failed to fetch token", e);
+      console.error("Failed to fetch user session", e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async () => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      await AsyncStorage.setItem("userToken", "dummy-token");
-      setIsAuthenticated(true);
+      console.log("Attempting login for:", email);
+      const loggedInUser = await DB.loginUser(email, password);
+      console.log("Login result:", loggedInUser);
+      if (loggedInUser) {
+        await AsyncStorage.setItem("user", JSON.stringify(loggedInUser));
+        setUser(loggedInUser);
+        return true;
+      }
+      return false;
     } catch (e) {
-      console.error("Failed to save token", e);
+      console.error("Failed to login", e);
+      return false;
+    }
+  };
+
+  const register = async (newUser: UserType): Promise<boolean> => {
+    try {
+      const registeredUser = await DB.registerUser(newUser);
+
+      const userToStore = registeredUser || { ...newUser, id: newUser.id || "generated-" + Date.now() };
+
+      if (userToStore) {
+        await AsyncStorage.setItem("user", JSON.stringify(userToStore));
+        setUser(userToStore);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Failed to register", e);
+      return false;
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem("userToken");
-      setIsAuthenticated(false);
+      await AsyncStorage.removeItem("user");
+      setUser(null);
     } catch (e) {
-      console.error("Failed to remove token", e);
+      console.error("Failed to remove user session", e);
     }
   };
 
   const value = useMemo(
     () => ({
-      isAuthenticated,
+      user,
+      isAuthenticated: !!user,
       isLoading,
       login,
+      register,
       logout,
     }),
-    [isAuthenticated, isLoading]
+    [user, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
