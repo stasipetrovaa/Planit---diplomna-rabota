@@ -80,3 +80,23 @@ export const loginUser = async (email: string, password: string): Promise<UserTy
     const user = users.find((u) => u.email === email && u.password === password);
     return user || null;
 };
+
+export const updateUserProfile = async (userId: string, name: string, avatarUri: string | null) => {
+    const users = await loadData<UserType>(USERS_KEY);
+    const index = users.findIndex((u) => u.id === userId);
+    if (index !== -1) {
+        users[index].name = name;
+        users[index].avatarUri = avatarUri;
+        await saveData(USERS_KEY, users);
+    }
+};
+
+export const deleteUser = async (userId: string) => {
+    const events = await loadData<EventType>(EVENTS_KEY);
+    const filteredEvents = events.filter((e) => e.userId !== userId);
+    await saveData(EVENTS_KEY, filteredEvents);
+
+    const users = await loadData<UserType>(USERS_KEY);
+    const filteredUsers = users.filter((u) => u.id !== userId);
+    await saveData(USERS_KEY, filteredUsers);
+};

@@ -13,6 +13,8 @@ declare module "@/services/db" {
   export const deleteEvent: (id: string) => Promise<void>;
   export const loginUser: (email: string, password: string) => Promise<any>;
   export const registerUser: (user: any) => Promise<any>;
+  export const updateUserProfile: (userId: string, name: string, avatarUri: string | null) => Promise<void>;
+  export const deleteUser: (userId: string) => Promise<void>;
 }
 
 declare module "@/services/notifications" {

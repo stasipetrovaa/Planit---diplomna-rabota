@@ -31,9 +31,17 @@ export const initDatabase = async () => {
         id TEXT PRIMARY KEY NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        name TEXT
+        name TEXT,
+        avatarUri TEXT
       );
     `);
+        // Migration to add avatarUri to existing users table
+        try {
+            await db.execAsync("ALTER TABLE users ADD COLUMN avatarUri TEXT;");
+            console.log("Migration: added avatarUri column to users table");
+        } catch (e) {
+            // Already exists or error, ignore
+        }
         console.log("Database initialized successfully");
     } catch (error) {
         console.error("Error initializing database:", error);
@@ -142,8 +150,8 @@ export const registerUser = async (user: UserType) => {
     try {
         const db = await getDB();
         await db.runAsync(
-            "INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)",
-            [user.id, user.email, user.password, user.name]
+            "INSERT INTO users (id, email, password, name, avatarUri) VALUES (?, ?, ?, ?, ?)",
+            [user.id, user.email, user.password ?? null, user.name ?? null, user.avatarUri ?? null]
         );
         return user;
     } catch (error) {
@@ -166,5 +174,29 @@ export const loginUser = async (email: string, password: string): Promise<UserTy
     } catch (error) {
         console.error("Error logging in:", error);
         return null;
+    }
+};
+
+export const updateUserProfile = async (userId: string, name: string, avatarUri: string | null) => {
+    try {
+        const db = await getDB();
+        await db.runAsync(
+            "UPDATE users SET name = ?, avatarUri = ? WHERE id = ?",
+            [name, avatarUri, userId]
+        );
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
+};
+
+export const deleteUser = async (userId: string) => {
+    try {
+        const db = await getDB();
+        await db.runAsync("DELETE FROM events WHERE userId = ?", [userId]);
+        await db.runAsync("DELETE FROM users WHERE id = ?", [userId]);
+    } catch (error) {
+        console.error("Error deleting user account:", error);
+        throw error;
     }
 };

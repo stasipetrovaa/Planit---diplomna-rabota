@@ -73,13 +73,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   appLogo: {
-    width: "100%",
-    height: "50%",
-    aspectRatio: 1,
-
+    width: 300,
+    height: 100,
   },
   subtitle: {
-    marginTop: -80,
+    marginTop: 10,
     fontSize: 17,
     fontWeight: "bold",
     textAlign: "center",

@@ -16,6 +16,8 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<boolean>;
   register: (user: UserType) => Promise<boolean>;
   logout: () => void;
+  updateProfile: (name: string, avatarUri: string | null) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,6 +27,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   logout: () => { },
+  updateProfile: async () => { },
+  deleteAccount: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -94,6 +98,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (name: string, avatarUri: string | null) => {
+    if (!user) return;
+    try {
+      await DB.updateUserProfile(user.id, name, avatarUri);
+      const updatedUser = { ...user, name, avatarUri };
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (e) {
+      console.error("Failed to update user profile", e);
+      throw e;
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    try {
+      await DB.deleteUser(user.id);
+      await AsyncStorage.removeItem("user");
+      setUser(null);
+    } catch (e) {
+      console.error("Failed to delete user account", e);
+      throw e;
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -102,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      updateProfile,
+      deleteAccount,
     }),
     [user, isLoading]
   );

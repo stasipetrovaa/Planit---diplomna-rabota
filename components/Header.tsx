@@ -4,12 +4,14 @@ import { useHeader } from "@/contexts/header-context";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import ProfileModal from "@/components/ProfileModal";
 
 export default function Header() {
   const { title, subtitle, toggleViewMode } = useHeader();
   const { logout, user } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -50,13 +52,30 @@ export default function Header() {
               <View style={styles.menuDropdown}>
                 {/* Profile Section */}
                 <View style={styles.profileSection}>
-                  <View style={styles.avatarPlaceholder}>
-                    {/* TODO: Add image picker */}
-                    <Ionicons name="person" size={32} color="white" />
-                  </View>
+                  {user?.avatarUri ? (
+                    <Image source={{ uri: user.avatarUri }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Ionicons name="person" size={32} color="white" />
+                    </View>
+                  )}
                   <Text style={styles.userName}>{user?.name || "User"}</Text>
                   <Text style={styles.userEmail}>{user?.email}</Text>
                 </View>
+
+                <View style={styles.divider} />
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    setProfileModalVisible(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="edit-2" size={20} color={Colors.tabIconSelected} />
+                  <Text style={[styles.menuItemText, styles.editItemText]}>Edit Profile</Text>
+                </TouchableOpacity>
 
                 <View style={styles.divider} />
 
@@ -73,6 +92,11 @@ export default function Header() {
           )}
         </View>
       </View>
+      
+      <ProfileModal
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+      />
     </View>
   );
 }
@@ -159,6 +183,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 8,
+    backgroundColor: "#F1F5F9",
+  },
+  editItemText: {
+    color: "#374151",
   },
   userName: {
     fontFamily: "MontserratBold",
